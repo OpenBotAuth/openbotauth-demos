@@ -1,0 +1,33 @@
+{
+  "name": "openbotauth-demos",
+  "version": "0.1.0",
+  "description": "Demo applications showcasing OpenBotAuth RFC 9421 signed fetch (unsigned → teaser/402, signed → full content)",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev:widget-backend": "pnpm -F @oba-demos/widget-backend dev",
+    "dev:widget-frontend": "pnpm -F @oba-demos/widget-frontend dev",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean && rm -rf node_modules"
+  },
+  "keywords": [
+    "openbotauth",
+    "rfc9421",
+    "http-signatures",
+    "ed25519",
+    "agent-auth",
+    "web-bot-auth"
+  ],
+  "author": "OpenBotAuth Contributors",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hammadtq/openbotauth-demos"
+  }
+}

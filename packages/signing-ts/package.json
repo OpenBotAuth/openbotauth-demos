@@ -1,0 +1,33 @@
+{
+  "name": "@oba-demos/signing-ts",
+  "version": "0.1.0",
+  "description": "RFC 9421 HTTP Message Signatures for OpenBotAuth (Ed25519)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "node --test --experimental-test-coverage ./dist/test/**/*.test.js",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "rfc9421",
+    "http-signatures",
+    "ed25519",
+    "openbotauth"
+  ],
+  "author": "OpenBotAuth Contributors",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.7.0"
+  }
+}
+
