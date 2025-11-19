@@ -10,7 +10,7 @@ Express server providing signed/unsigned fetch API for the OpenBotAuth demo widg
 - ✅ Automatic redirect handling with re-signing
 - ✅ Request logging with signature redaction
 - ✅ CORS enabled for frontend
-- ✅ 10s request timeout
+- ✅ 30s request timeout
 
 ## Installation
 
@@ -133,7 +133,7 @@ This ensures signatures remain valid throughout redirect chains.
 - ✅ Private keys never logged
 - ✅ Signature values redacted in logs (first 10 chars only)
 - ✅ CORS configured for widget frontend
-- ✅ Request timeout (10s) prevents hanging
+- ✅ Request timeout (30s) prevents hanging
 - ✅ Input validation on all endpoints
 
 ## Logging

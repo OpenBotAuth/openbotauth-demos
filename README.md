@@ -52,6 +52,8 @@ Interactive web UI demonstrating signed fetch with visual diff:
 
 ## Quick Start
 
+📚 **For fastest setup, see [QUICKSTART.md](QUICKSTART.md)** — includes automated key configuration.
+
 ### Prerequisites
 
 1. **Node.js 20+** and **pnpm 8+**
@@ -83,6 +85,23 @@ openssl pkey -in private_key.pem -pubout -out public_key.pem
 
 ### 2. Configure Environment
 
+**Automatic (Recommended):**
+
+If you downloaded keys from the OpenBotAuth website:
+
+```bash
+# For Node.js apps (widget, backend)
+node scripts/parse-keys.js path/to/openbotauth-keys-username.txt
+
+# For Python agent
+cd examples/langchain-agent
+python parse_keys.py path/to/openbotauth-keys-username.txt
+```
+
+This will automatically generate `.env` files with your keys.
+
+**Manual:**
+
 ```bash
 # Copy example config
 cp .env.example .env
@@ -106,9 +125,8 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 # Install dependencies
 pip install -r requirements.txt
 
-# Copy environment config
-cp .env.example .env
-# Edit .env with your keys
+# Configure keys (if not already done)
+python parse_keys.py path/to/openbotauth-keys-username.txt
 
 # Test unsigned (should get teaser/402)
 python demo_agent.py --mode unsigned --url https://blog.attach.dev/?p=6
@@ -122,11 +140,16 @@ python demo_agent.py --mode signed --url https://blog.attach.dev/?p=6
 - **Unsigned**: `Status: 200` with `[TEASER]` indicator, limited content
 - **Signed**: `Status: 200` with `X-OBA-Decision: allow` header, full content
 
+**Note:** Some origin servers may be slow or rate-limited. If you encounter timeouts, try alternative URLs or wait a moment before retrying.
+
 ### 4. Run Web Widget
 
 ```bash
 # Install all dependencies
 pnpm install
+
+# Configure keys for backend (if not already done)
+node scripts/parse-keys.js path/to/openbotauth-keys-username.txt
 
 # Terminal 1: Start backend
 pnpm dev:widget-backend
@@ -185,6 +208,12 @@ Signature-Agent: https://registry.openbotauth.org/jwks/username.json
 - Nonce: base64url-encoded random 16 bytes
 - Time window: `(expires - created) ≤ 300s`
 
+**Implementation features:**
+- **Automatic redirect handling**: When the origin returns 3xx, the request is re-signed for the new URL
+- **Timeout resilience**: 30-second timeout prevents hanging on slow origins
+- **Clock skew tolerance**: ±5 minutes allowed between client and verifier
+- **Header size consideration**: Large signatures may require NGINX/Apache configuration adjustments
+
 ---
 
 ## Repository Structure
@@ -192,14 +221,20 @@ Signature-Agent: https://registry.openbotauth.org/jwks/username.json
 ```
 openbotauth-demos/
 ├── README.md                          # This file
+├── QUICKSTART.md                      # Fast setup guide
+├── SECURITY_AUDIT.md                  # Dependency security review
 ├── LICENSE                            # Apache 2.0
 ├── package.json                       # Root workspace
 ├── pnpm-workspace.yaml               # pnpm workspace config
 ├── .env.example                       # Environment template
+├── scripts/
+│   ├── parse-keys.js                 # Auto-configure .env from key file
+│   └── README.md                      # Key parser documentation
 ├── examples/
 │   └── langchain-agent/              # Python demo
 │       ├── demo_agent.py             # CLI tool
 │       ├── signed_fetch.py           # RFC 9421 signer
+│       ├── parse_keys.py             # Python key parser
 │       ├── requirements.txt
 │       └── README.md
 ├── packages/
@@ -207,15 +242,17 @@ openbotauth-demos/
 │       ├── src/
 │       │   ├── index.ts              # Main exports
 │       │   ├── rfc9421.ts            # RFC 9421 canonicalization
-│       │   └── ed25519.ts            # Ed25519 crypto
+│       │   ├── ed25519.ts            # Ed25519 crypto
+│       │   └── types.ts              # TypeScript interfaces
 │       └── test/
-│           └── signing.test.ts       # Unit tests
+│           └── signing.test.ts       # Unit tests + golden vector
 └── apps/
     ├── widget-backend/               # Express API server
     │   └── src/
     │       ├── server.ts             # /api/fetch endpoint
-    │       ├── config.ts
-    │       └── types.ts
+    │       ├── config.ts             # Environment config
+    │       ├── logger.ts             # Secure logging
+    │       └── types.ts              # Type definitions
     └── widget-frontend/              # React UI
         └── src/
             ├── App.tsx               # Main component
@@ -231,6 +268,7 @@ openbotauth-demos/
 - **[RFC 7517](https://www.rfc-editor.org/rfc/rfc7517.html)** — JSON Web Key (JWK)
 - **[Ed25519](https://ed25519.cr.yp.to/)** — EdDSA signature scheme
 - **[OpenBotAuth](https://github.com/hammadtq/openbotauth)** — Main project (registry, verifier, WordPress plugin)
+- **[SECURITY_AUDIT.md](SECURITY_AUDIT.md)** — Cryptographic dependency verification and security review
 
 ---
 
@@ -279,6 +317,32 @@ WIDGET_PORT=8090
 pnpm dev:widget-backend
 ```
 
+### Large Header Errors (400 Bad Request)
+
+If you encounter 400 errors when sending signed requests, the server may have header size limits that are too restrictive for RFC 9421 signatures.
+
+**NGINX:**
+
+```nginx
+# In http or server block
+large_client_header_buffers 4 32k;
+```
+
+**Apache:**
+
+```apache
+# In httpd.conf or .htaccess
+LimitRequestFieldSize 32768
+```
+
+### Request Timeouts
+
+The demos use a 30-second timeout. If origin servers are slow:
+
+1. **Try alternative test URLs** with reliable response times
+2. **Wait and retry** if the origin is rate-limiting
+3. **Increase timeout** in backend config if needed (edit `apps/widget-backend/src/server.ts`)
+
 ---
 
 ## Development
@@ -310,17 +374,6 @@ pnpm test
 cd ../../examples/langchain-agent
 pytest test_signing.py  # (if tests are added)
 ```
-
----
-
-## 90-Second Video Script
-
-1. **[0:00-0:15]** Terminal: `python demo_agent.py --mode unsigned` → Show teaser response with `[TEASER]` tag
-2. **[0:15-0:30]** Terminal: `python demo_agent.py --mode signed` → Show full response with `X-OBA-Decision: allow`
-3. **[0:30-0:45]** Switch to browser: Open widget at `localhost:5174`
-4. **[0:45-1:00]** Enter URL, click "Unsigned" → Show teaser + status panel
-5. **[1:00-1:15]** Toggle to "Signed", click fetch → Show full content + headers diff highlighting `Signature-Input`, `Signature`, `Signature-Agent`
-6. **[1:15-1:30]** Close: "Origin-first, provider-neutral bot auth. Code + docs at github.com/hammadtq/openbotauth-demos"
 
 ---
 
