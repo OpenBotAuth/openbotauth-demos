@@ -20,7 +20,8 @@ export function parseUrl(method: string, url: string): ParsedUrl {
     authority = urlObj.hostname;
   }
   
-  const path = urlObj.pathname + urlObj.search;
+  // Per RFC 9421, @path is pathname only (NO query string)
+  const path = urlObj.pathname || '/';
   
   return {
     method: method.toUpperCase(),

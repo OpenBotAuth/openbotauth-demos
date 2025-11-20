@@ -62,8 +62,66 @@ def parse_openbotauth_key_file(content: str) -> dict:
     
     return result
 
+def find_matching_kid_in_jwks(jwks_url: str, public_key_pem: str) -> str | None:
+    """Find the matching UUID KID in JWKS by matching the public key."""
+    import json
+    import urllib.request
+    import base64
+    
+    try:
+        # Extract base64 data from PEM
+        pem_lines = public_key_pem.strip().split('\n')
+        pem_data = ''.join(line for line in pem_lines 
+                          if not line.startswith('-----'))
+        
+        # Decode the public key
+        pub_key_bytes = base64.b64decode(pem_data)
+        
+        # Ed25519 public keys in SPKI format:
+        # 30 2a (SEQUENCE, 42 bytes)
+        # 30 05 (SEQUENCE, 5 bytes for algorithm)
+        # 06 03 2b 65 70 (OID for Ed25519)
+        # 03 21 00 (BIT STRING, 33 bytes)
+        # [32 bytes of actual public key]
+        
+        # Extract the 32-byte Ed25519 key (last 32 bytes)
+        if len(pub_key_bytes) >= 32:
+            ed25519_key = pub_key_bytes[-32:]
+            expected_x = base64.urlsafe_b64encode(ed25519_key).decode('utf-8').rstrip('=')
+            
+            print(f"  Looking for public key x coordinate: {expected_x[:20]}...")
+            
+            # Fetch JWKS
+            with urllib.request.urlopen(jwks_url) as response:
+                jwks = json.loads(response.read())
+            
+            # Find matching key by x coordinate
+            for key in jwks.get('keys', []):
+                if key.get('x') == expected_x:
+                    print(f"  ✅ Found matching key in JWKS!")
+                    return key.get('kid')
+            
+            print(f"  ⚠️  No matching public key found in JWKS")
+            print(f"  This means the key hasn't been registered yet or registration failed")
+        
+        return None
+    except Exception as e:
+        print(f"⚠️  Warning: Could not match public key in JWKS: {e}")
+        return None
+
 def generate_env_file(keys: dict, output_path: str = '.env'):
     """Generate .env file from parsed keys."""
+    # Try to find the correct UUID KID from JWKS by matching the public key
+    kid_to_use = keys['kid']
+    uuid_kid = find_matching_kid_in_jwks(keys['jwks_url'], keys['public_key'])
+    
+    if uuid_kid and uuid_kid != keys['kid']:
+        print(f"\n⚠️  KID Mismatch Detected!")
+        print(f"  Downloaded file has: {keys['kid']}")
+        print(f"  JWKS actually has:   {uuid_kid}")
+        print(f"  Using UUID format KID from JWKS...")
+        kid_to_use = uuid_kid
+    
     env_content = f'''# OpenBotAuth Configuration
 # Auto-generated from OpenBotAuth key file
 
@@ -73,8 +131,8 @@ OBA_PRIVATE_KEY_PEM="{keys['private_key']}"
 # Ed25519 public key in PEM format (SPKI)
 OBA_PUBLIC_KEY_PEM="{keys['public_key']}"
 
-# Key ID
-OBA_KID="{keys['kid']}"
+# Key ID (corrected to match JWKS)
+OBA_KID="{kid_to_use}"
 
 # JWKS URL (Signature-Agent header value)
 OBA_SIGNATURE_AGENT_URL="{keys['jwks_url']}"
@@ -86,7 +144,7 @@ DEMO_URL="https://blog.attach.dev/?p=6"
     Path(output_path).write_text(env_content)
     print(f"✅ Generated {output_path}")
     print(f"\nConfiguration:")
-    print(f"  KID: {keys['kid']}")
+    print(f"  KID: {kid_to_use}")
     print(f"  JWKS URL: {keys['jwks_url']}")
     print(f"\n🚀 You can now run:")
     print(f"  python demo_agent.py --mode unsigned")

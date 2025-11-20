@@ -9,6 +9,7 @@ build/
 
 # Environment
 .env
+*.env.*
 .env.local
 .env.*.local
 
@@ -44,3 +45,4 @@ coverage/
 # Temporary files
 tmp/
 temp/
+.cursor/

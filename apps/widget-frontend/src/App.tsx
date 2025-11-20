@@ -47,12 +47,14 @@ function App() {
 
   const isTeaser = (response: FetchResponse): boolean => {
     const decision = response.headers['x-oba-decision'];
-    return decision === 'teaser' || (response.status === 200 && response.bytes < 5000);
+    // Only TEASER if verifier explicitly set X-OBA-Decision: teaser
+    return decision?.toLowerCase() === 'teaser';
   };
 
   const isFullContent = (response: FetchResponse): boolean => {
     const decision = response.headers['x-oba-decision'];
-    return decision === 'allow' || (response.signed && response.status === 200);
+    // Only FULL if verifier explicitly set X-OBA-Decision: allow
+    return decision?.toLowerCase() === 'allow';
   };
 
   return (

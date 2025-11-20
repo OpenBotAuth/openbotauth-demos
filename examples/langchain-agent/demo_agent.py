@@ -163,11 +163,24 @@ def print_response(response: httpx.Response, mode: str):
         
         preview = text[:200]
         
-        # Determine if teaser or full
-        is_teaser = oba_decision == 'teaser' or (response.status_code == 200 and body_bytes < 5000)
-        is_full = oba_decision == 'allow' or (mode == 'signed' and response.status_code == 200)
-        
-        content_label = '[TEASER]' if is_teaser else '[FULL]' if is_full else ''
+        # Determine if teaser or full based on actual response, not mode assumptions
+        content_label = ''
+        if oba_decision == 'teaser':
+            content_label = '[TEASER - Policy Enforced]'
+        elif oba_decision == 'allow':
+            content_label = '[FULL - Policy Allowed]'
+        elif oba_decision == 'deny':
+            content_label = '[DENIED]'
+        elif response.status_code == 402:
+            content_label = '[PAYMENT REQUIRED]'
+        elif body_bytes < 5000 and response.status_code == 200:
+            content_label = '[TEASER - Small Response]'
+        else:
+            # No clear indication - report what we know
+            if mode == 'signed':
+                content_label = '[⚠️  FULL CONTENT - Plugin not enforcing policies (missing X-OBA-Decision)]'
+            else:
+                content_label = '[⚠️  FULL CONTENT - Plugin not enforcing policies (missing X-OBA-Decision)]'
         
         print(f"{preview}{'...' if len(text) > 200 else ''}")
         print(f"\n{content_label}")

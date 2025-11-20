@@ -98,17 +98,17 @@ def build_signature_base(
     # Normalize authority (strip default ports)
     authority = normalize_authority(url)
     
-    # Path + query
-    path = parsed.path + ('?' + parsed.query if parsed.query else '')
+    # Path only (NO query string - per RFC 9421 @path is pathname only)
+    path = parsed.path or '/'
     
-    # Components to sign (in this exact order per RFC 9421)
-    components = ['@method', '@authority', '@path']
+    # Components to sign (in this exact order - must match bot-cli)
+    components = ['@method', '@path', '@authority']
     
-    # Build signature base lines
+    # Build signature base lines (must be in same order as components)
     lines = [
         f'"@method": {method.upper()}',
-        f'"@authority": {authority}',
         f'"@path": {path}',
+        f'"@authority": {authority}',
     ]
     
     # Add extra headers if provided

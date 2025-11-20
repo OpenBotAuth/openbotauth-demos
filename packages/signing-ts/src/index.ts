@@ -55,9 +55,9 @@ export async function makeSignedHeaders(
   const expires = opts.expires ?? (created + 300); // 5 minutes default
   const nonce = opts.nonce ?? generateNonce();
   
-  // Standard components to sign (in this exact order per RFC 9421)
+  // Standard components to sign (in this exact order - must match bot-cli and verifier)
   const components: SignatureComponents = {
-    components: ['@method', '@authority', '@path', ...(opts.extraHeaders || [])],
+    components: ['@method', '@path', '@authority', ...(opts.extraHeaders || [])],
     created,
     expires,
     nonce,
