@@ -19,15 +19,66 @@ router.post('/cart', async (req, res) => {
     
     const sessionId = req.body.session_id || 'demo-session';
     const item_name = req.body.item_name;
-    const quantity = req.body.quantity || 1;
+    
+    // Parse quantity - handle both numbers and text like "one", "two", etc.
+    let quantity = 1;
+    const quantityInput = req.body.quantity;
+    if (quantityInput) {
+      const textToNumber: Record<string, number> = {
+        'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+        'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10
+      };
+      const lowerQuantity = String(quantityInput).toLowerCase().trim();
+      quantity = textToNumber[lowerQuantity] || parseInt(quantityInput, 10) || 1;
+    }
     
     console.log(`[ElevenLabs Cart Webhook] Adding item: ${item_name}, quantity: ${quantity}, session: ${sessionId}`);
+
+    // Map product names to prices
+    const productPrices: Record<string, number> = {
+      'Classic White Shirt': 89,
+      'classic white shirt': 89,
+      'white shirt': 89,
+      'Denim Jacket': 149,
+      'denim jacket': 149,
+      'Black Trousers': 129,
+      'black trousers': 129,
+      'trousers': 129,
+      'Leather Boots': 199,
+      'leather boots': 199,
+      'boots': 199,
+      'Navy Blazer': 249,
+      'navy blazer': 249,
+      'blazer': 249,
+      'Burgundy Polo Shirt': 79,
+      'burgundy polo shirt': 79,
+      'polo shirt': 79,
+      'Tan Chinos': 119,
+      'tan chinos': 119,
+      'chinos': 119,
+      'Black Dress Shoes': 199,
+      'black dress shoes': 199,
+      'dress shoes': 199,
+      'Dark Denim': 129,
+      'dark denim': 129,
+      'denim': 129,
+    };
+
+    // Find the price based on item name (case-insensitive partial match)
+    let price = 99; // Default price
+    const lowerItemName = item_name?.toLowerCase() || '';
+    for (const [productName, productPrice] of Object.entries(productPrices)) {
+      if (lowerItemName.includes(productName.toLowerCase())) {
+        price = productPrice;
+        break;
+      }
+    }
 
     // Add item to cart
     const cart = CartManager.addItem(sessionId, {
       id: Date.now(),
       name: item_name,
-      price: 99, // Mock price
+      price: price,
       quantity: quantity,
     });
     const total = CartManager.getTotal(sessionId);
@@ -219,6 +270,40 @@ router.post('/payment/execute', async (req, res) => {
       return res.status(400).json({ error: 'Consent not captured' });
     }
 
+    // Step 1: Record consent with timestamp
+    StepEmitter.emitStepStart('record-consent', 'payment', { 
+      consentId: consent.consentId,
+      timestamp: consent.timestamp 
+    });
+    await new Promise(resolve => setTimeout(resolve, 500)); // Visual delay
+    StepEmitter.emitStepComplete('record-consent', 'payment', { 
+      consent: consent.transcript 
+    });
+
+    // Step 2: Request ID token from Visa
+    StepEmitter.emitStepStart('request-id-token', 'payment', { 
+      user: user_identifier 
+    });
+    await new Promise(resolve => setTimeout(resolve, 800)); // Visual delay
+    const mockIdToken = `eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(JSON.stringify({
+      sub: user_identifier,
+      iss: 'visa-mock',
+      iat: Math.floor(Date.now() / 1000)
+    })).toString('base64')}`;
+    StepEmitter.emitStepComplete('request-id-token', 'payment', { 
+      idToken: mockIdToken.substring(0, 50) + '...' 
+    });
+
+    // Step 3: Generate nonce and timestamps
+    StepEmitter.emitStepStart('generate-nonce', 'payment');
+    await new Promise(resolve => setTimeout(resolve, 400)); // Visual delay
+    StepEmitter.emitStepComplete('generate-nonce', 'payment', {
+      nonce: session.nonce.substring(0, 16) + '...',
+      created: session.created,
+      expires: session.expires
+    });
+
+    // Step 4: Build TAP objects
     StepEmitter.emitStepStart('build-tap-objects', 'payment', { checkoutId });
 
     // Build TAP objects
@@ -247,6 +332,10 @@ router.post('/payment/execute', async (req, res) => {
 
     StepEmitter.emitStepComplete('build-tap-objects', 'payment', { consumer, payment });
 
+    // Step 5: Sign the message with RFC 9421
+    StepEmitter.emitStepStart('sign-message', 'payment');
+    await new Promise(resolve => setTimeout(resolve, 600)); // Visual delay
+    
     // Build RFC 9421 signed request
     const merchantUrl = `http://localhost:${config.port}/merchant/checkout`;
     const requestBody = {
@@ -267,7 +356,16 @@ router.post('/payment/execute', async (req, res) => {
       }
     );
 
-    StepEmitter.emitStepStart('send-signed-request', 'payment', { merchantUrl });
+    StepEmitter.emitStepComplete('sign-message', 'payment', {
+      algorithm: 'Ed25519',
+      keyId: config.obaKid
+    });
+
+    // Step 6: Send signed request to merchant
+    StepEmitter.emitStepStart('send-signed-request', 'payment', { 
+      method: 'POST',
+      url: '/merchant/checkout'
+    });
 
     // Send signed request to merchant
     const merchantResponse = await fetch(merchantUrl, {
@@ -284,6 +382,11 @@ router.post('/payment/execute', async (req, res) => {
     }
 
     const result = await merchantResponse.json() as { orderId: string; transactionId: string };
+    
+    StepEmitter.emitStepComplete('send-signed-request', 'payment', {
+      status: merchantResponse.status,
+      orderId: result.orderId
+    });
     
     CheckoutManager.updateStatus(checkoutId, 'completed');
 

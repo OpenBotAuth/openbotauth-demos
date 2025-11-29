@@ -23,6 +23,11 @@ router.post('/checkout', async (req, res) => {
       return res.status(400).json({ error: 'Missing TAP objects' });
     }
 
+    StepEmitter.emitStepComplete('merchant-receive', 'verification', {
+      hasConsumer: !!agenticConsumer,
+      hasPayment: !!agenticPaymentContainer
+    });
+
     // Step 2: Verify HTTP signature via OBA verifier
     StepEmitter.emitStepStart('oba-verify-http-sig', 'verification');
 
@@ -71,6 +76,19 @@ router.post('/checkout', async (req, res) => {
     }
 
     StepEmitter.emitStepComplete('fetch-jwks', 'verification', { keyId });
+
+    // Step 3b: OBA Registry returns JWKS to OBA Verifier
+    StepEmitter.emitStepStart('return-jwks', 'verification', { keyId });
+    await new Promise(resolve => setTimeout(resolve, 300)); // Visual delay
+    StepEmitter.emitStepComplete('return-jwks', 'verification', { publicKey: jwk.x.substring(0, 16) + '...' });
+
+    // Step 3c: OBA Verifier returns verification result to Merchant
+    StepEmitter.emitStepStart('return-verification', 'verification', { verified: true });
+    await new Promise(resolve => setTimeout(resolve, 300)); // Visual delay
+    StepEmitter.emitStepComplete('return-verification', 'verification', { 
+      agentId: verifyResult.agentId,
+      verified: true 
+    });
 
     // Step 4: Verify TAP object signatures
     StepEmitter.emitStepStart('verify-tap-signatures', 'verification');
@@ -164,7 +182,9 @@ router.post('/checkout', async (req, res) => {
 
     StepEmitter.emitStepComplete('visa-authorize', 'authorization', visaAuth);
 
-    // Step 6: Create order
+    // Step 6: Send response back to agent
+    StepEmitter.emitStepStart('checkout_complete', 'payment');
+    
     const orderId = `ORD-${uuidv4().substring(0, 8).toUpperCase()}`;
 
     StepEmitter.emitCheckoutComplete(orderId, visaAuth.transactionId);

@@ -68,8 +68,8 @@ export default function CartPanel({
               </div>
             </div>
 
-            {/* Checkout Button */}
-            {!isLocked && onCheckout && (
+            {/* Checkout Button - Hide during checkout phase */}
+            {!isLocked && !isCheckoutPhase && onCheckout && (
               <button 
                 onClick={onCheckout}
                 className="btn-primary w-full"

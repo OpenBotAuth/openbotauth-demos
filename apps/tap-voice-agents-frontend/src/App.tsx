@@ -20,7 +20,7 @@ function App() {
   const [devtoolsVisible, setDevtoolsVisible] = useState(false);
   const [highlightedProductId, setHighlightedProductId] = useState<number | null>(null);
 
-  const { steps, activeStep } = useStepEvents({
+  const { steps, activeStep, resetSteps } = useStepEvents({
     onCartUpdated: (data) => {
       console.log('[App] Cart updated from Pete:', data);
       setCartOpen(true); // Open cart panel when Pete adds items
@@ -34,11 +34,14 @@ function App() {
       })));
     },
     onCheckoutInitiated: (data) => {
-      console.log('[App] Checkout initiated via SSE - switching to Penny');
+      //console.log('[App] Checkout initiated via SSE - waiting for Pete to finish handoff message');
       // Store checkout ID first
       sessionStorage.setItem('tap-checkout-id', data.checkout_id);
-      // Use the shared transition function
-      transitionToPenny();
+      // Delay transition to give Pete time to say his handoff message (3 seconds)
+      setTimeout(() => {
+        console.log('[App] Now switching to Penny');
+        transitionToPenny();
+      }, 7000);
     },
     onPaymentAuthorized: () => {
       console.log('[App] Payment authorized - closing cart to show sequence diagram');
@@ -48,7 +51,7 @@ function App() {
 
   // Shared function to transition from Pete to Penny
   const transitionToPenny = () => {
-    console.log('[App] Transitioning to Penny - opening cart panel');
+    resetSteps(); // Clear old sequence diagram steps
     setActiveAgent('penny');
     setCartOpen(true); // Open cart so user can see their order
     //setCartLocked(true);
@@ -100,7 +103,8 @@ function App() {
   }, []);
 
   // Handle add to cart
-  const handleAddToCart = (product: Product) => {
+  const handleAddToCart = async (product: Product) => {
+    // Update frontend state
     const existingItem = cartItems.find((item) => item.productId === product.id);
 
     if (existingItem) {
@@ -124,6 +128,26 @@ function App() {
       ]);
     }
 
+    // Also add to backend cart so manual checkout works
+    try {
+      const sessionId = getSessionId();
+      await fetch('http://localhost:8090/api/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          item: {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: 1,
+          }
+        })
+      });
+    } catch (err) {
+      console.error('[Cart] Failed to sync with backend:', err);
+    }
+
     // Highlight product and open cart
     setHighlightedProductId(product.id);
     setCartOpen(true);
@@ -135,14 +159,9 @@ function App() {
     setCartItems(cartItems.filter((item) => item.productId !== productId));
   };
 
-  // Get or create session ID
+  // Get or create session ID - use 'demo-session' to match backend
   const getSessionId = () => {
-    let sessionId = sessionStorage.getItem('tap-session-id');
-    if (!sessionId) {
-      sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem('tap-session-id', sessionId);
-    }
-    return sessionId;
+    return 'demo-session'; // Must match the hardcoded session in backend webhooks
   };
 
   // Handle checkout from cart panel button - creates backend checkout session first
@@ -216,7 +235,7 @@ function App() {
 
         {/* Sequence Diagram - Always visible */}
         <div className="sequence-diagram-container px-6 py-4 bg-purple-900/20 mt-8">
-          <h2 className="text-xl font-bold mb-4 text-purple-300">Live TAP Payment Flow</h2>
+          <h2 className="text-xl font-bold mb-4 text-purple-300">Live TAP Payment Flow with OpenBotAuth Registry</h2>
           <SequenceDiagram
             steps={steps}
             activeStep={activeStep}

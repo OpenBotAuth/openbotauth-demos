@@ -13,6 +13,12 @@ export function useStepEvents(callbacks?: StepEventsCallbacks) {
   const [steps, setSteps] = useState<SequenceStep[]>([]);
   const [activeStep, setActiveStep] = useState(0);
 
+  const resetSteps = () => {
+    //console.log('[SSE] Resetting sequence diagram steps');
+    setSteps([]);
+    setActiveStep(0);
+  };
+
   useEffect(() => {
     console.log(`[SSE] Connecting to ${BACKEND_URL}/api/events/stream`);
     const eventSource = new EventSource(`${BACKEND_URL}/api/events/stream`);
@@ -53,14 +59,20 @@ export function useStepEvents(callbacks?: StepEventsCallbacks) {
 
         // Map SSE events to sequence steps
         const stepMap: Record<string, { from: ParticipantType; to: ParticipantType; label: string }> = {
+          'record-consent': { from: 'agent', to: 'agent', label: 'Record Consent' },
+          'request-id-token': { from: 'agent', to: 'visa', label: 'Request ID Token' },
+          'generate-nonce': { from: 'agent', to: 'agent', label: 'Generate Nonce' },
           'build-tap-objects': { from: 'agent', to: 'agent', label: 'Build TAP Objects' },
-          'send-signed-request': { from: 'agent', to: 'merchant', label: 'Send Signed Request' },
-          'merchant-receive': { from: 'agent', to: 'merchant', label: 'POST /checkout' },
+          'sign-message': { from: 'agent', to: 'agent', label: 'Sign Message (RFC 9421)' },
+          'send-signed-request': { from: 'agent', to: 'merchant', label: 'POST /checkout' },
+          'merchant-receive': { from: 'merchant', to: 'merchant', label: 'Receive Request' },
           'oba-verify-http-sig': { from: 'merchant', to: 'oba-verifier', label: 'Verify HTTP Signature' },
           'fetch-jwks': { from: 'oba-verifier', to: 'oba-registry', label: 'Fetch JWKS' },
+          'return-jwks': { from: 'oba-registry', to: 'oba-verifier', label: 'Return Public Key' },
+          'return-verification': { from: 'oba-verifier', to: 'merchant', label: 'Verification Result' },
           'verify-tap-signatures': { from: 'merchant', to: 'merchant', label: 'Verify TAP Signatures' },
           'visa-authorize': { from: 'merchant', to: 'visa', label: 'Authorize Payment' },
-          'merchant-checkout': { from: 'merchant', to: 'agent', label: 'Checkout Complete' },
+          'checkout_complete': { from: 'merchant', to: 'agent', label: 'Checkout Complete' },
         };
 
         const stepConfig = stepMap[data.stepId];
@@ -69,7 +81,7 @@ export function useStepEvents(callbacks?: StepEventsCallbacks) {
           return;
         }
         
-        console.log(`[SSE] ➕ Adding step to diagram: ${data.stepId} (${stepConfig.from} → ${stepConfig.to})`);
+        //console.log(`[SSE] ➕ Adding step to diagram: ${data.stepId} (${stepConfig.from} → ${stepConfig.to})`);
 
         setSteps((prev) => {
           const existingIndex = prev.findIndex((s) => s.id === data.stepId);
@@ -87,14 +99,14 @@ export function useStepEvents(callbacks?: StepEventsCallbacks) {
           };
 
           if (existingIndex >= 0) {
+            // Update existing step
             const updated = [...prev];
             updated[existingIndex] = newStep;
-            if (newStep.status === 'completed') {
-              setActiveStep(existingIndex + 1);
-            }
+            // activeStep stays the same when updating
             return updated;
           } else {
-            setActiveStep(prev.length);
+            // New step - increment activeStep
+            setActiveStep(prev.length + 1);
             return [...prev, newStep];
           }
         });
@@ -113,6 +125,6 @@ export function useStepEvents(callbacks?: StepEventsCallbacks) {
     };
   }, []);
 
-  return { steps, activeStep };
+  return { steps, activeStep, resetSteps };
 }
 

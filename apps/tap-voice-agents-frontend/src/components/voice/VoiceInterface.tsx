@@ -98,10 +98,10 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
             
             // Auto-disconnect Penny after "Thank you" message
             if (activeAgent === 'penny' && msg.message.toLowerCase().includes('thank you')) {
-              console.log('[Voice] Penny said thank you - auto-disconnecting in 2s');
+              console.log('[Voice] Penny said thank you - auto-disconnecting in 5s');
               setTimeout(() => {
                 handleStop();
-              }, 2000);
+              }, 5000); // Give time for sequence diagram to complete
             }
           }
         },
@@ -316,7 +316,7 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
   // Minimized view
   if (isMinimized) {
     return (
-      <div className="fixed left-6 z-50" style={{ bottom: activeAgent === 'penny' ? '5.5rem' : '1.5rem' }}>
+      <div className="fixed left-6 bottom-6 z-50">
         <button
           onClick={() => setIsMinimized(false)}
           className="card-glass px-6 py-4 flex items-center gap-3 hover:scale-105 transition-transform"
@@ -332,7 +332,7 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
   }
 
   return (
-    <div className="fixed left-6 z-50 max-h-[calc(100vh-3rem)] flex flex-col" style={{ bottom: activeAgent === 'penny' ? '5.5rem' : '1.5rem' }}>
+    <div className="fixed left-6 bottom-6 z-50 max-h-[calc(100vh-3rem)] flex flex-col">
       <div className="card-glass max-w-md min-w-[380px] overflow-y-auto flex-1 flex flex-col">
         {/* Agent Avatar and Info with Close Button */}
         <div className="flex items-center gap-4 mb-4">

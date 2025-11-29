@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { SequenceStep as SequenceStepType } from '../../types';
 
 interface SequenceDiagramProps {
@@ -8,7 +8,7 @@ interface SequenceDiagramProps {
 }
 
 const PARTICIPANTS = [
-  { id: 'agent', label: 'Agent (Penny)', color: '#8b5cf6' },
+  { id: 'agent', label: 'Agent', color: '#8b5cf6' },
   { id: 'merchant', label: 'Merchant', color: '#3b82f6' },
   { id: 'oba-verifier', label: 'OBA Verifier', color: '#10b981' },
   { id: 'oba-registry', label: 'OBA Registry', color: '#f59e0b' },
@@ -17,15 +17,52 @@ const PARTICIPANTS = [
 
 export default function SequenceDiagram({ steps, activeStep, expanded }: SequenceDiagramProps) {
   const [showStepList, setShowStepList] = useState(false);
+  const svgContainerRef = useRef<HTMLDivElement>(null);
   
   // Force expanded if we have steps
   const isExpanded = expanded || steps.length > 0;
   
   const completedSteps = steps.filter(s => s.status === 'completed').length;
 
-  // Calculate participant positions
-  const participantWidth = 160;
-  const participantGap = 60;
+  // Auto-scroll to show new steps as they appear - slow and demo-friendly
+  useEffect(() => {
+    if (steps.length > 0 && svgContainerRef.current) {
+      const container = svgContainerRef.current;
+      const stepHeight = 80; // Approximate height per step
+      const targetScroll = Math.max(0, (steps.length - 3) * stepHeight); // Keep 3 steps visible
+      
+      // Delay scroll slightly to let step render
+      const scrollTimeout = setTimeout(() => {
+        container.scrollTo({
+          top: targetScroll,
+          behavior: 'smooth'
+        });
+      }, 300);
+
+      return () => clearTimeout(scrollTimeout);
+    }
+  }, [steps.length]); // Trigger on new steps
+  
+  // Final scroll when all steps complete
+  useEffect(() => {
+    if (completedSteps > 0 && completedSteps === steps.length && svgContainerRef.current) {
+      const container = svgContainerRef.current;
+      
+      // Slowly scroll to bottom to show all completed steps
+      const finalScrollTimeout = setTimeout(() => {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior: 'smooth'
+        });
+      }, 1000);
+
+      return () => clearTimeout(finalScrollTimeout);
+    }
+  }, [completedSteps, steps.length]);
+
+  // Calculate participant positions - compact layout to avoid horizontal scrolling
+  const participantWidth = 140;
+  const participantGap = 40;
   const totalWidth = (PARTICIPANTS.length * participantWidth) + ((PARTICIPANTS.length - 1) * participantGap);
   
   const getParticipantX = (participantId: string): number => {
@@ -43,10 +80,10 @@ export default function SequenceDiagram({ steps, activeStep, expanded }: Sequenc
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-4">
                 <h3 className="text-lg font-semibold text-slate-300">
-                  Currently: Step {activeStep} {activeStep >= steps.length ? '- Complete' : '- In Progress'}
+                  Payment Flow: {steps.length} {steps.length === 1 ? 'Step' : 'Steps'}
                 </h3>
                 <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-full text-sm font-medium">
-                  ✓ {completedSteps} COMPLETE
+                  ✓ {completedSteps} of {steps.length} COMPLETE
                 </span>
               </div>
               
@@ -85,8 +122,15 @@ export default function SequenceDiagram({ steps, activeStep, expanded }: Sequenc
               </div>
             )}
 
-            {/* Sequence Diagram Container */}
-            <div className="relative" style={{ width: '100%', minHeight: `${Math.max(500, steps.length * 100 + 200)}px` }}>
+            {/* Sequence Diagram Container - Scrollable */}
+            <div 
+              ref={svgContainerRef}
+              className="relative overflow-y-auto" 
+              style={{ 
+                width: '100%', 
+                height: '60vh' // Fixed height to enable scrolling
+              }}
+            >
               {/* Participant Headers */}
               <div 
                 className="flex justify-between mb-4" 

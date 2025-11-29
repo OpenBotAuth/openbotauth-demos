@@ -153,10 +153,9 @@
 
 /* Cart panel during checkout - adjust bottom to accommodate Penny's voice interface */
 .cart-panel.checkout-phase.open {
-  bottom: 5rem !important;
+  bottom: 0rem !important;
   height: auto !important;
   top: 0 !important;
-  right: 66px !important;
 }
 
 /* Sequence Diagram Swimlane */

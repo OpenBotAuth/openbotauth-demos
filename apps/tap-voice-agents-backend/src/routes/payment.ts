@@ -38,6 +38,40 @@ router.post('/execute', async (req, res) => {
       return res.status(400).json({ error: 'Consent window expired' });
     }
 
+    // Step 1: Record consent with timestamp
+    StepEmitter.emitStepStart('record-consent', 'payment', { 
+      consentId: consent.consentId,
+      timestamp: consent.timestamp 
+    });
+    await new Promise(resolve => setTimeout(resolve, 500)); // Visual delay
+    StepEmitter.emitStepComplete('record-consent', 'payment', { 
+      consent: consent.transcript 
+    });
+
+    // Step 2: Request ID token from Visa
+    StepEmitter.emitStepStart('request-id-token', 'payment', { 
+      user: userIdentifier 
+    });
+    await new Promise(resolve => setTimeout(resolve, 800)); // Visual delay
+    const mockIdToken = `eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.${Buffer.from(JSON.stringify({
+      sub: userIdentifier,
+      iss: 'visa-mock',
+      iat: Math.floor(Date.now() / 1000)
+    })).toString('base64')}`;
+    StepEmitter.emitStepComplete('request-id-token', 'payment', { 
+      idToken: mockIdToken.substring(0, 50) + '...' 
+    });
+
+    // Step 3: Generate nonce and timestamps
+    StepEmitter.emitStepStart('generate-nonce', 'payment');
+    await new Promise(resolve => setTimeout(resolve, 400)); // Visual delay
+    StepEmitter.emitStepComplete('generate-nonce', 'payment', {
+      nonce: session.nonce.substring(0, 16) + '...',
+      created: session.created,
+      expires: session.expires
+    });
+
+    // Step 4: Build TAP objects
     StepEmitter.emitStepStart('build-tap-objects', 'payment', { checkoutId });
 
     // 3. Build TAP objects
@@ -66,6 +100,10 @@ router.post('/execute', async (req, res) => {
 
     StepEmitter.emitStepComplete('build-tap-objects', 'payment', { consumer, payment });
 
+    // Step 5: Sign the message with RFC 9421
+    StepEmitter.emitStepStart('sign-message', 'payment');
+    await new Promise(resolve => setTimeout(resolve, 600)); // Visual delay
+
     // 4. Build RFC 9421 signed request
     const merchantUrl = `http://localhost:${config.port}/merchant/checkout`;
     const requestBody = {
@@ -87,7 +125,16 @@ router.post('/execute', async (req, res) => {
       }
     );
 
-    StepEmitter.emitStepStart('send-signed-request', 'payment', { merchantUrl });
+    StepEmitter.emitStepComplete('sign-message', 'payment', {
+      algorithm: 'Ed25519',
+      keyId: config.obaKid
+    });
+
+    // Step 6: Send signed request to merchant
+    StepEmitter.emitStepStart('send-signed-request', 'payment', { 
+      method: 'POST',
+      url: '/merchant/checkout'
+    });
 
     // 5. Send signed request to merchant
     const merchantResponse = await fetch(merchantUrl, {
@@ -104,6 +151,11 @@ router.post('/execute', async (req, res) => {
     }
 
     const result = await merchantResponse.json() as { orderId: string; transactionId: string };
+    
+    StepEmitter.emitStepComplete('send-signed-request', 'payment', {
+      status: merchantResponse.status,
+      orderId: result.orderId
+    });
     
     CheckoutManager.updateStatus(checkoutId, 'completed');
 

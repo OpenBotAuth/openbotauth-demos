@@ -68,7 +68,7 @@ export class StepEmitter {
   }
 
   static emitCheckoutComplete(orderId: string, transactionId: string): void {
-    this.emitStep('checkout_complete', 'final', 'payment', {
+    this.emitStep('step_complete', 'checkout_complete', 'payment', {
       orderId,
       transactionId,
     });

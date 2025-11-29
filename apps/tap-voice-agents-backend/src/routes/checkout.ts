@@ -2,6 +2,7 @@ import { Router, type Router as RouterType } from 'express';
 import { CheckoutManager } from '../services/checkout-manager.js';
 import { CartManager } from '../services/cart-manager.js';
 import { ConsentManager } from '../services/consent-manager.js';
+import { StepEmitter } from '../events/step-emitter.js';
 import { CheckoutInitiateRequest, ConsentCaptureRequest } from '../types.js';
 
 const router: RouterType = Router();
@@ -72,6 +73,16 @@ router.post('/consent/capture', (req, res) => {
 
     const consent = ConsentManager.captureConsent(checkoutId, transcript, audioHash);
     CheckoutManager.setConsentId(checkoutId, consent.consentId);
+
+    // Emit SSE event to close cart panel
+    StepEmitter.emit({
+      type: 'payment_authorized',
+      data: {
+        checkoutId,
+        consentId: consent.consentId,
+        timestamp: consent.timestamp
+      }
+    });
 
     res.json({
       consentId: consent.consentId,
