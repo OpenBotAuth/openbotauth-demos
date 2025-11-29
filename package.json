@@ -12,6 +12,8 @@
     "build": "pnpm -r build",
     "dev:widget-backend": "pnpm -F @oba-demos/widget-backend dev",
     "dev:widget-frontend": "pnpm -F @oba-demos/widget-frontend dev",
+    "dev:tap-voice-backend": "pnpm -F @oba-demos/tap-voice-agents-backend dev",
+    "dev:tap-voice-frontend": "pnpm -F @oba-demos/tap-voice-agents-frontend dev",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "clean": "pnpm -r clean && rm -rf node_modules"

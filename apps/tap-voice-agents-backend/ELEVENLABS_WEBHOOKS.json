@@ -1,0 +1,121 @@
+{
+  "pete_cart_agent": {
+    "agent_name": "Pete (Cart Agent)",
+    "note": "Each tool must have its own webhook URL configured in ElevenLabs",
+    "tools": [
+      {
+        "name": "add_to_cart",
+        "webhook_url": "https://your-tunnel-url/webhooks/elevenlabs/cart",
+        "description": "Add an item to the user's shopping cart",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "item_name": {
+              "type": "string",
+              "description": "The name of the product to add (e.g., 'Classic White Shirt', 'Denim Jacket', 'Black Trousers', 'Leather Boots')"
+            },
+            "quantity": {
+              "type": "number",
+              "description": "Number of items to add",
+              "default": 1
+            }
+          },
+          "required": ["item_name"]
+        }
+      },
+      {
+        "name": "view_cart",
+        "webhook_url": "https://your-tunnel-url/webhooks/elevenlabs/cart/view",
+        "description": "Show the current items in the shopping cart and total",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "initiate_checkout",
+        "webhook_url": "https://your-tunnel-url/webhooks/elevenlabs/cart/checkout",
+        "description": "Start the checkout process and hand off to the payment agent (Penny)",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      }
+    ],
+    "system_prompt": "You are Pete, a friendly shopping assistant for a premium fashion store. Help users browse products and add items to their cart. When they're ready to checkout, use the initiate_checkout tool and tell them you're connecting them to Penny, our payment specialist. Be conversational and helpful. Available products: Classic White Shirt ($99), Denim Jacket ($149), Black Trousers ($129), Leather Boots ($199)."
+  },
+  "penny_payment_agent": {
+    "agent_name": "Penny (Payment Agent)",
+    "note": "Each tool must have its own webhook URL configured in ElevenLabs",
+    "tools": [
+      {
+        "name": "get_checkout_info",
+        "webhook_url": "https://your-tunnel-url/webhooks/elevenlabs/payment/info",
+        "description": "Get the checkout total and items. Call this FIRST when you start talking to the user.",
+        "parameters": {
+          "type": "object",
+          "properties": {}
+        }
+      },
+      {
+        "name": "capture_consent",
+        "webhook_url": "https://your-tunnel-url/webhooks/elevenlabs/payment/consent",
+        "description": "Capture the user's verbal consent to authorize the payment",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "transcript": {
+              "type": "string",
+              "description": "The exact transcript of the user's authorization statement"
+            },
+            "user_confirmed": {
+              "type": "boolean",
+              "description": "Whether the user explicitly confirmed the payment (true/false)"
+            }
+          },
+          "required": ["transcript", "user_confirmed"]
+        }
+      },
+      {
+        "name": "execute_payment",
+        "webhook_url": "https://your-tunnel-url/webhooks/elevenlabs/payment/execute",
+        "description": "Execute the payment after consent has been captured",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "payment_token": {
+              "type": "string",
+              "description": "Mock payment token (always use 'tok_visa_4242' for demo)"
+            },
+            "user_identifier": {
+              "type": "string",
+              "description": "User identifier (always use 'demo_user' for demo)"
+            }
+          },
+          "required": ["payment_token", "user_identifier"]
+        }
+      }
+    ],
+    "system_prompt": "You are Penny, a professional payment processor. Follow this exact flow:\n\n1. IMMEDIATELY call get_checkout_info to retrieve the order total\n2. Greet the user and state: \"Your checkout total is $X. Do you authorize this payment?\"\n3. When they say yes/confirm, IMMEDIATELY call capture_consent with their exact words and user_confirmed=true\n4. IMMEDIATELY after consent, call execute_payment with payment_token='tok_visa_4242' and user_identifier='demo_user'\n5. Confirm: \"Perfect! Your payment of $X has been processed. Thank you!\"\n\nBe proactive - call each tool immediately in sequence. Do not wait or ask additional questions between steps."
+  },
+  "setup_instructions": {
+    "step_1": "Start Cloudflare Tunnel: cloudflared tunnel --url http://localhost:8090",
+    "step_2": "Copy the tunnel URL (e.g., https://abc-123-def.trycloudflare.com)",
+    "step_3": "Go to ElevenLabs dashboard and create/edit your Pete agent",
+    "step_4": "For EACH of Pete's 3 tools, set its specific webhook URL (see pete_cart_agent.tools above)",
+    "step_5": "Copy Pete's system prompt into the agent's system prompt field",
+    "step_6": "Create/edit your Penny agent",
+    "step_7": "For EACH of Penny's 3 tools, set its specific webhook URL (see penny_payment_agent.tools above)",
+    "step_8": "Copy Penny's system prompt into the agent's system prompt field",
+    "step_9": "In your frontend .env, set VITE_ELEVENLABS_CART_AGENT_ID and VITE_ELEVENLABS_PAYMENT_AGENT_ID",
+    "important_notes": [
+      "CRITICAL: Each tool needs its own webhook URL, not just the base URL",
+      "Do NOT use /api/ prefix in webhook URLs (routes are at /webhooks/elevenlabs/*)",
+      "The webhook URL must be publicly accessible (use Cloudflare Tunnel or ngrok)",
+      "Make sure your backend is running on port 8090",
+      "Replace 'your-tunnel-url' with your actual Cloudflare/ngrok URL",
+      "Penny's system prompt is crucial - she must be proactive and call tools in sequence"
+    ]
+  }
+}
+

@@ -48,6 +48,45 @@ Interactive web UI demonstrating signed fetch with visual diff:
 - See request headers, response status, and body preview
 - Visual diff showing added signature headers
 
+### 3. TAP Voice Agents (`apps/tap-voice-agents-backend/` + `apps/tap-voice-agents-frontend/`)
+
+**Premium fashion shopping experience** demonstrating Visa TAP-style agentic commerce with OpenBotAuth:
+
+```bash
+# Terminal 1: Start backend
+pnpm dev:tap-voice-backend
+# Runs on http://localhost:8090
+
+# Terminal 2: Start frontend
+pnpm dev:tap-voice-frontend
+# Runs on http://localhost:5175
+```
+
+**Features:**
+- **Two Voice Agents**: Pete (shopping) + Penny (payment) via ElevenLabs Conversational AI
+- **TAP-Style Signing**: RFC 9421 HTTP Message Signatures + application-level signatures for `agenticConsumer` and `agenticPaymentContainer` objects
+- **Live Sequence Diagram**: Real-time visualization with OpenBotAuth swimlanes (Agent, Merchant, OBA Verifier, OBA Registry, Visa)
+- **DevTools Panel**: Inspect HTTP headers, TAP objects, and raw requests
+- **Origin-First Verification**: Merchant backend calls `https://verifier.openbotauth.org/verify` directly (no CDN dependency)
+- **Premium UI**: Glass morphism design, smooth phase transitions, and live SSE updates
+
+**User Flow:**
+1. Browse 8 men's fashion products
+2. Add items to cart via Pete (voice or manual controls)
+3. Say "checkout" to hand off to Penny
+4. Authorize payment via voice consent
+5. Watch real-time sequence diagram as payment flows through:
+   - Agent → Merchant (signed request)
+   - Merchant → OBA Verifier (signature verification)
+   - OBA Verifier → OBA Registry (JWKS fetch)
+   - Merchant validates TAP objects
+   - Merchant → Visa (payment authorization)
+   - Success response back to Agent
+
+**Security:** Triple-layer signing with shared nonce across HTTP signature and both TAP objects, 8-minute time-bound sessions, origin-side verification.
+
+See [apps/tap-voice-agents-backend/README.md](apps/tap-voice-agents-backend/README.md) and [apps/tap-voice-agents-frontend/README.md](apps/tap-voice-agents-frontend/README.md) for detailed setup.
+
 ---
 
 ## Quick Start
@@ -90,15 +129,21 @@ openssl pkey -in private_key.pem -pubout -out public_key.pem
 If you downloaded keys from the OpenBotAuth website:
 
 ```bash
-# For Node.js apps (widget, backend)
+# For root .env (widget demo)
 node scripts/parse-keys.js path/to/openbotauth-keys-username.txt
+
+# For specific app directories (uses .env.example as template)
+node scripts/parse-keys.js path/to/openbotauth-keys-username.txt apps/tap-voice-agents-backend
 
 # For Python agent
 cd examples/langchain-agent
 python parse_keys.py path/to/openbotauth-keys-username.txt
 ```
 
-This will automatically generate `.env` files with your keys.
+**Note**: When using an app-specific directory, the script will:
+1. Use that app's `.env.example` as a template
+2. Replace only the `OBA_*` placeholders
+3. Leave other fields for you to fill in (like ElevenLabs API keys)
 
 **Manual:**
 

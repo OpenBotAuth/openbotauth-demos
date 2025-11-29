@@ -28,6 +28,8 @@
   "devDependencies": {
     "@types/node": "^20.10.0",
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^3.0.0"
   }
 }
-
