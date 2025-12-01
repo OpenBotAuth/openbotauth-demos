@@ -48,44 +48,41 @@ Interactive web UI demonstrating signed fetch with visual diff:
 - See request headers, response status, and body preview
 - Visual diff showing added signature headers
 
-### 3. TAP Voice Agents (`apps/tap-voice-agents-backend/` + `apps/tap-voice-agents-frontend/`)
+### 3. TAP Voice Agents
 
-**Premium fashion shopping experience** demonstrating Visa TAP-style agentic commerce with OpenBotAuth:
+**Premium fashion shopping with voice checkout** — [Full Documentation](TAP_VOICE_DEMO.md) | [Demo Video](https://youtu.be/1ZPB_n6v6EI)
 
-```bash
-# Terminal 1: Start backend
-pnpm dev:tap-voice-backend
-# Runs on http://localhost:8090
-
-# Terminal 2: Start frontend
-pnpm dev:tap-voice-frontend
-# Runs on http://localhost:5175
-```
+Interactive voice commerce demo showing Visa TAP-style agentic payments with OpenBotAuth:
 
 **Features:**
-- **Two Voice Agents**: Pete (shopping) + Penny (payment) via ElevenLabs Conversational AI
-- **TAP-Style Signing**: RFC 9421 HTTP Message Signatures + application-level signatures for `agenticConsumer` and `agenticPaymentContainer` objects
-- **Live Sequence Diagram**: Real-time visualization with OpenBotAuth swimlanes (Agent, Merchant, OBA Verifier, OBA Registry, Visa)
-- **DevTools Panel**: Inspect HTTP headers, TAP objects, and raw requests
-- **Origin-First Verification**: Merchant backend calls `https://verifier.openbotauth.org/verify` directly (no CDN dependency)
-- **Premium UI**: Glass morphism design, smooth phase transitions, and live SSE updates
+- **Two ElevenLabs Voice Agents**: Pete (shopping assistant) + Penny (payment processor)
+- **Live 15-Step Sequence Diagram**: Real-time visualization showing RFC 9421 + TAP signing flow with OpenBotAuth swimlanes
+- **Origin-First Verification**: Merchant calls OBA verifier directly (no CDN dependency)
+- **Triple-Layer Signing**: HTTP Message Signature + 2 TAP object signatures with shared nonce
+- **Browser-Native UI**: Agent panels styled like browser extensions, glass morphism cart
+- **Real-Time SSE Updates**: Backend emits events as each verification step completes
 
-**User Flow:**
-1. Browse 8 men's fashion products
-2. Add items to cart via Pete (voice or manual controls)
-3. Say "checkout" to hand off to Penny
-4. Authorize payment via voice consent
-5. Watch real-time sequence diagram as payment flows through:
-   - User Agent → Merchant Origin (signed request)
-   - Merchant Origin → OpenBotAuth Verifier (signature verification)
-   - OpenBotAuth Verifier → OpenBotAuth Registry (JWKS fetch)
-   - Merchant Origin validates TAP objects
-   - Merchant Origin → Visa Mock (payment authorization)
-   - Success response back to Agent
+```bash
+# Start backend (http://localhost:8090)
+pnpm dev:tap-voice-backend
 
-**Security:** Triple-layer signing with shared nonce across HTTP signature and both TAP objects, 8-minute time-bound sessions, origin-side verification.
+# Start frontend (http://localhost:5175)
+pnpm dev:tap-voice-frontend
+```
 
-See [apps/tap-voice-agents-backend/README.md](apps/tap-voice-agents-backend/README.md) and [apps/tap-voice-agents-frontend/README.md](apps/tap-voice-agents-frontend/README.md) for detailed setup.
+**User Experience:**
+1. Browse 8 men's fashion products, add to cart with Pete (voice or manual)
+2. Say "checkout" → Pete hands off to Penny
+3. Authorize payment → Watch live sequence diagram animate through 15 steps:
+   - Record Consent → Request ID Token → Generate Nonce → Build TAP Objects
+   - Sign Message (RFC 9421) → POST /checkout → Merchant Receive
+   - Verify HTTP Signature → Fetch JWKS → Return Public Key → Verification Result
+   - Verify TAP Signatures → Authorize Payment → Checkout Complete
+4. Order confirmed with transaction ID
+
+**Security:** Shared nonce across all three signature layers, 8-minute time-bound sessions, Ed25519 signing, origin-side verification.
+
+See [TAP_VOICE_DEMO.md](TAP_VOICE_DEMO.md) for complete setup, architecture, ElevenLabs configuration, and troubleshooting.
 
 ---
 
@@ -266,6 +263,7 @@ Signature-Agent: https://registry.openbotauth.org/jwks/username.json
 ```
 openbotauth-demos/
 ├── README.md                          # This file
+├── TAP_VOICE_DEMO.md                  # TAP Voice Agents comprehensive guide
 ├── QUICKSTART.md                      # Fast setup guide
 ├── SECURITY_AUDIT.md                  # Dependency security review
 ├── LICENSE                            # Apache 2.0
@@ -298,11 +296,26 @@ openbotauth-demos/
     │       ├── config.ts             # Environment config
     │       ├── logger.ts             # Secure logging
     │       └── types.ts              # Type definitions
-    └── widget-frontend/              # React UI
+    ├── widget-frontend/              # React UI
+    │   └── src/
+    │       ├── App.tsx               # Main component
+    │       └── components/
+    │           └── HeadersDiff.tsx   # Signature headers diff view
+    ├── tap-voice-agents-backend/     # TAP Voice Agents backend
+    │   ├── src/
+    │   │   ├── server.ts             # Express app
+    │   │   ├── routes/               # API endpoints
+    │   │   ├── services/             # Business logic
+    │   │   ├── tap/                  # TAP object builders
+    │   │   └── events/               # SSE event emitter
+    │   ├── ELEVENLABS_SETUP.md       # ElevenLabs agent configuration
+    │   └── ELEVENLABS_WEBHOOKS.json  # Tool definitions
+    └── tap-voice-agents-frontend/    # TAP Voice Agents frontend
         └── src/
-            ├── App.tsx               # Main component
-            └── components/
-                └── HeadersDiff.tsx   # Signature headers diff view
+            ├── App.tsx               # Main application
+            ├── components/           # UI components
+            ├── hooks/                # React hooks (SSE)
+            └── utils/                # Helper functions
 ```
 
 ---
