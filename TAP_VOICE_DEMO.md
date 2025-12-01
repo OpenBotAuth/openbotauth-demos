@@ -10,51 +10,56 @@
   </a>
 </p>
 
-Premium fashion shopping experience with voice checkout, demonstrating Visa TAP-style agentic commerce powered by OpenBotAuth and ElevenLabs Conversational AI.
+A working implementation of autonomous agent-to-merchant payments using cryptographic identity and consent proofs.
 
-**Important**: Pete and Penny are **user sub-agents** running in the user's wallet/browser extension, not website agents. They always act on behalf of the user, not the merchant.
+**Core Concept**: This demo shows how commerce will work when users have their own AI agents. Pete and Penny are **user-owned sub-agents** that live in your browser/OS (like extensions or system services), not on merchant websites. They shop and pay on your behalf, using cryptographic signatures to prove identity and consent to merchants.
 
 ---
 
 ## Overview
 
-This demo showcases a complete voice-driven shopping and checkout experience that implements:
+When users have their own AI agents, how do payments work? This demo implements a complete cryptographic flow for agent-to-merchant transactions:
 
-- **TAP-Style Signing**: RFC 9421 HTTP Message Signatures + application-level signatures for `userConsentProof` and `paymentRequest` objects
-- **OpenBotAuth Integration**: Origin-first, CDN-agnostic verification using the hosted OBA verifier service
-- **User Sub-Agents**: Two ElevenLabs voice agents (Pete for shopping, Penny for payment) that act on behalf of the user, not the merchant
-- **Live Visualization**: Real-time sequence diagram showing all 15 steps of the payment flow
-- **Browser-Native UI**: Agent panels styled to look like browser extensions for an authentic experience
+- **User-Owned Agents**: Two AI agents (Pete for shopping, Penny for payments) that run client-side and act on the user's behalf
+- **Cryptographic Identity**: RFC 9421 HTTP Message Signatures with Ed25519 keys prove agent identity to merchants
+- **Consent Proofs**: Application-level signatures on `userConsentProof` and `paymentRequest` objects prove user authorization
+- **Origin-First Verification**: Merchants verify signatures directly using OpenBotAuth (no CDN/proxy required)
+- **Live Flow Visualization**: 15-step sequence diagram shows the complete cryptographic handshake
 
-### Key Features
+### What This Solves
 
-- ✅ **Two User Sub-Agents**: Pete (shopping assistant) and Penny (payment processor) - they represent the user, not the merchant
-- ✅ **Triple-Layer Signing**: HTTP Message Signature + 2 TAP object signatures with shared nonce
-- ✅ **Origin-First Verification**: Merchant backend calls `https://verifier.openbotauth.org/verify` directly
-- ✅ **Live Sequence Diagram**: 15-step animated flow with OpenBotAuth swimlanes
-- ✅ **Real-Time SSE Updates**: Backend emits events as each step completes
-- ✅ **Premium UI**: Glass morphism cart, smooth transitions, browser-native agent panels
-- ✅ **Manual Controls**: Fallback buttons for testing without voice
+**The Problem**: When AI agents shop and pay on behalf of users, merchants need to:
+1. Verify the agent's identity (who are you?)
+2. Confirm user authorization (did the user actually approve this?)
+3. Trust the payment details (is this request authentic?)
 
-### Tech Stack
+**The Solution**: Cryptographic signatures at three layers:
+- ✅ **HTTP Message Signature (RFC 9421)**: Proves the request came from a specific agent
+- ✅ **User Consent Proof Signature**: Proves the user authorized this specific action
+- ✅ **Payment Request Signature**: Proves the payment details haven't been tampered with
+- ✅ **Shared Nonce**: Single nonce across all three layers prevents replay/mix-and-match attacks
+
+**Why It Matters**:
+- No cookies, sessions, or OAuth flows needed
+- Agents can be stateless (sign and forget)
+- Merchants verify directly (no third-party dependencies)
+- Works across any network topology (CDN-agnostic)
+
+### Implementation
 
 **Backend** (Node.js + TypeScript + Express):
-- Cart management with in-memory sessions
-- Checkout session management with time-bound nonces
-- Consent capture and verification
-- TAP-style signing using `@oba-demos/signing-ts`
-- OBA verifier integration
-- Mock Visa authorization
-- Server-Sent Events (SSE) for real-time updates
-- ElevenLabs webhook handlers
+- Ed25519 signing with `@oba-demos/signing-ts`
+- RFC 9421 HTTP Message Signature generation
+- Application-level object signing (consent + payment)
+- OpenBotAuth verifier integration
+- Mock merchant + Visa endpoints
+- Server-Sent Events for live flow visualization
 
 **Frontend** (React + Vite + TypeScript):
-- 8 premium men's fashion products
-- Glass morphism shopping cart panel
-- ElevenLabs voice interface integration
-- Live sequence diagram with SVG rendering
-- Real-time SSE connection
-- Smooth phase transitions (shopping → checkout)
+- ElevenLabs voice agent integration (Pete + Penny)
+- Live 15-step sequence diagram (SVG-based)
+- Real-time SSE connection to backend
+- Browser-native agent UI (styled like extensions)
 
 ---
 
@@ -470,72 +475,6 @@ Frontend subscribes via `EventSource` at `/api/events/stream`.
 Backend is configured to allow requests from `FRONTEND_URL` (default: `http://localhost:5175`).
 
 For production, update to your actual frontend domain.
-
----
-
-## Troubleshooting
-
-### Webhook Errors
-
-**Symptom**: Pete or Penny says "There was an error" when calling tools
-
-**Solutions**:
-1. Ensure backend is running on port 8090
-2. Check that webhook URLs in ElevenLabs match your tunnel URL
-3. Verify each tool has its own specific webhook URL (not just base URL)
-4. Check backend logs for incoming webhook requests
-5. Ensure no `/api/` prefix in ElevenLabs webhook URLs (routes are at `/webhooks/elevenlabs/*`)
-
-### Signature Verification Fails
-
-**Symptom**: Backend logs show "Signature verification failed" or 401 errors
-
-**Solutions**:
-1. Verify OBA keys are correctly configured in backend `.env`
-2. Check that `OBA_KID` matches the UUID format from your JWKS
-3. Ensure `OBA_SIGNATURE_AGENT_URL` is publicly accessible
-4. Verify system time is accurate (NTP sync)
-5. Check that the Ed25519 key format is correct (PKCS8 PEM)
-
-### Agent Handoff Not Working
-
-**Symptom**: Pete doesn't transfer to Penny after checkout
-
-**Solutions**:
-1. Ensure Pete's system prompt instructs him to call `initiate_checkout`
-2. Verify frontend has both agent IDs configured
-3. Check that backend emits `checkout_initiated` SSE event
-4. Ensure frontend is listening for the event and calling `transitionToPenny()`
-
-### Sequence Diagram Not Animating
-
-**Symptom**: Diagram doesn't update or steps don't appear
-
-**Solutions**:
-1. Check browser console for SSE connection errors
-2. Verify backend is emitting `step_start` and `step_complete` events
-3. Ensure frontend `useStepEvents` hook is mapping step IDs correctly
-4. Check that all 15 step IDs in backend match frontend `stepMap`
-
-### Cart Shows $NaN
-
-**Symptom**: Cart total displays `$NaN` instead of amount
-
-**Solutions**:
-1. Check that product prices are defined in backend `productPrices` map
-2. Verify quantity parsing is working (handles "one", "two", etc.)
-3. Ensure backend is returning `price` field in cart items
-4. Check frontend `CartItem` type mapping
-
-### Penny Disconnects Abruptly
-
-**Symptom**: Penny stops talking before payment completes
-
-**Solutions**:
-1. Check ElevenLabs quota limits (may have exceeded free tier)
-2. Verify Penny's system prompt instructs her to complete all steps
-3. Ensure backend is emitting all payment flow events
-4. Check that `checkout_complete` event is being sent
 
 ---
 

@@ -50,19 +50,17 @@ Interactive web UI demonstrating signed fetch with visual diff:
 
 ### 3. TAP Voice Agents
 
-**Premium fashion shopping with voice checkout** — [Full Documentation](TAP_VOICE_DEMO.md) | [Demo Video](https://youtu.be/1ZPB_n6v6EI)
+**Cryptographic agent-to-merchant payments** — [Full Documentation](TAP_VOICE_DEMO.md) | [Demo Video](https://youtu.be/1ZPB_n6v6EI)
 
-Interactive voice commerce demo showing Visa TAP-style agentic payments with OpenBotAuth.
+Shows how commerce works when users have their own AI agents. Pete and Penny are **user-owned agents** (like browser extensions or OS services) that shop and pay on the user's behalf using cryptographic signatures.
 
-**Key Concept**: Pete and Penny are **user sub-agents** (like browser extensions or wallet agents) that act on behalf of the user, not the merchant.
-
-**Features:**
-- **Two User Sub-Agents**: Pete (shopping assistant) + Penny (payment processor) - they represent the user, not the merchant
-- **Live 15-Step Sequence Diagram**: Real-time visualization showing RFC 9421 + application-level signing flow with OpenBotAuth swimlanes
-- **Origin-First Verification**: Merchant calls OBA verifier directly (no CDN dependency)
-- **Triple-Layer Signing**: HTTP Message Signature + 2 application-level object signatures (user consent proof + payment request) with shared nonce
-- **Browser-Native UI**: Agent panels styled like browser extensions, glass morphism cart
-- **Real-Time SSE Updates**: Backend emits events as each verification step completes
+**What it demonstrates:**
+- **User-Owned Agents**: AI agents that live client-side and act on behalf of users, not merchants
+- **Cryptographic Identity**: RFC 9421 HTTP Message Signatures prove agent identity without sessions/cookies
+- **Consent Proofs**: Application-level signatures prove user authorization for specific actions
+- **Triple-Layer Signing**: HTTP signature + 2 object signatures (consent + payment) with shared nonce
+- **Origin-First Verification**: Merchants verify signatures directly using OpenBotAuth (no CDN/proxy)
+- **Live Flow Visualization**: 15-step sequence diagram shows the complete cryptographic handshake
 
 ```bash
 # Start backend (http://localhost:8090)
@@ -72,17 +70,25 @@ pnpm dev:tap-voice-backend
 pnpm dev:tap-voice-frontend
 ```
 
-**User Experience:**
-1. Browse 8 men's fashion products, add to cart with Pete (voice or manual)
-2. Say "checkout" → Pete hands off to Penny
-3. Authorize payment → Watch live sequence diagram animate through 15 steps:
-   - Record Consent → Request ID Token → Generate Nonce → Build Signed Objects
-   - Sign Message (RFC 9421) → POST /checkout → Merchant Receive
-   - Verify HTTP Signature → Fetch JWKS → Return Public Key → Verification Result
-   - Verify Object Signatures → Authorize Payment → Checkout Complete
-4. Order confirmed with transaction ID
+**Flow:**
+1. User's shopping agent (Pete) adds items to cart
+2. User initiates checkout → Pete hands off to payment agent (Penny)
+3. User authorizes payment → Penny executes cryptographic flow:
+   - Records consent proof with timestamp
+   - Generates shared nonce for all signature layers
+   - Signs consent proof object (Ed25519)
+   - Signs payment request object (Ed25519)
+   - Signs HTTP request (RFC 9421)
+   - Sends to merchant with all three signatures
+4. Merchant verifies:
+   - HTTP signature via OpenBotAuth verifier
+   - Fetches agent's public key from JWKS
+   - Validates consent + payment object signatures
+   - Checks nonce consistency across all layers
+   - Authorizes payment with Visa
+5. Order confirmed
 
-**Security:** Shared nonce across all three signature layers, 8-minute time-bound sessions, Ed25519 signing, origin-side verification.
+**Security:** Shared nonce prevents replay attacks, 8-minute time windows, Ed25519 signatures, origin-side verification.
 
 See [TAP_VOICE_DEMO.md](TAP_VOICE_DEMO.md) for complete setup, architecture, ElevenLabs configuration, and troubleshooting.
 
