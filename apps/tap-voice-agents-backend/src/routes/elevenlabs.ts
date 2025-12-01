@@ -221,6 +221,17 @@ router.post('/payment/consent', async (req, res) => {
 
     console.log(`[ElevenLabs Payment Webhook] Consent captured: ${consent.consentId}`);
 
+    // Step 1: Record consent (first step in the TAP flow)
+    StepEmitter.emitStepStart('record-consent', 'payment', { 
+      checkoutId,
+      transcript: transcript.substring(0, 50) + '...'
+    });
+    await new Promise(resolve => setTimeout(resolve, 500)); // Visual delay
+    StepEmitter.emitStepComplete('record-consent', 'payment', { 
+      consentId: consent.consentId,
+      timestamp: consent.timestamp
+    });
+
     // Emit event to close cart panel
     StepEmitter.emit({
       type: 'payment_authorized',
@@ -270,16 +281,8 @@ router.post('/payment/execute', async (req, res) => {
       return res.status(400).json({ error: 'Consent not captured' });
     }
 
-    // Step 1: Record consent with timestamp
-    StepEmitter.emitStepStart('record-consent', 'payment', { 
-      consentId: consent.consentId,
-      timestamp: consent.timestamp 
-    });
-    await new Promise(resolve => setTimeout(resolve, 500)); // Visual delay
-    StepEmitter.emitStepComplete('record-consent', 'payment', { 
-      consent: consent.transcript 
-    });
-
+    // Note: Record consent step already emitted in /payment/consent endpoint
+    
     // Step 2: Request ID token from Visa
     StepEmitter.emitStepStart('request-id-token', 'payment', { 
       user: user_identifier 
@@ -292,6 +295,13 @@ router.post('/payment/execute', async (req, res) => {
     })).toString('base64')}`;
     StepEmitter.emitStepComplete('request-id-token', 'payment', { 
       idToken: mockIdToken.substring(0, 50) + '...' 
+    });
+
+    // Step 2b: Visa returns ID token to agent
+    StepEmitter.emitStepStart('return-id-token', 'payment');
+    await new Promise(resolve => setTimeout(resolve, 300)); // Visual delay
+    StepEmitter.emitStepComplete('return-id-token', 'payment', {
+      idToken: mockIdToken.substring(0, 50) + '...'
     });
 
     // Step 3: Generate nonce and timestamps

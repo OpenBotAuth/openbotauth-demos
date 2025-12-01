@@ -8,11 +8,11 @@ interface SequenceDiagramProps {
 }
 
 const PARTICIPANTS = [
-  { id: 'agent', label: 'Agent', color: '#8b5cf6' },
-  { id: 'merchant', label: 'Merchant', color: '#3b82f6' },
-  { id: 'oba-verifier', label: 'OBA Verifier', color: '#10b981' },
-  { id: 'oba-registry', label: 'OBA Registry', color: '#f59e0b' },
-  { id: 'visa', label: 'Visa Mock', color: '#ef4444' },
+  { id: 'agent', label: 'User Sub-Agent', color: '#8b5cf6' },
+  { id: 'merchant', label: 'Merchant Orign', color: '#3b82f6' },
+  { id: 'oba-verifier', label: 'OpenBotAuth Verifier', color: '#10b981' },
+  { id: 'oba-registry', label: 'OpenBotAuth Registry', color: '#f59e0b' },
+  { id: 'visa', label: 'Visa Mock Server', color: '#ef4444' },
 ];
 
 export default function SequenceDiagram({ steps, activeStep, expanded }: SequenceDiagramProps) {
@@ -136,9 +136,7 @@ export default function SequenceDiagram({ steps, activeStep, expanded }: Sequenc
                 className="flex justify-between mb-4" 
                 style={{ 
                   width: `${totalWidth}px`, 
-                  margin: '0 auto',
-                  paddingLeft: `${participantWidth / 2}px`,
-                  paddingRight: `${participantWidth / 2}px`
+                  margin: '0 auto'
                 }}
               >
                 {PARTICIPANTS.map((participant) => (

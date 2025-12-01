@@ -35,7 +35,7 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
   const sessionId = getSessionId();
 
   const agentName = activeAgent === 'pete' ? 'Pete' : 'Penny';
-  const agentRole = activeAgent === 'pete' ? 'Shopping Assistant' : 'Payment Processor';
+  const agentRole = activeAgent === 'pete' ? 'Your Shopping Sub-Agent (via OpenBotAuth)' : 'Your Checkout Sub-Agent (via OpenBotAuth)';
 
   // Initialize controller once
   useEffect(() => {
@@ -383,7 +383,7 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
               <span>{voiceStatus === 'connecting' ? 'Connecting...' : `Use Voice with ${agentName}`}</span>
             </button>
             <p className="text-xs text-slate-400 mt-1">
-              Optional: Uses real audio via ElevenLabs
+            Runs in your wallet / extension – embedded here for demo.
             </p>
           </div>
         )}

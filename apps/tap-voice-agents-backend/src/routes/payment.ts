@@ -62,6 +62,13 @@ router.post('/execute', async (req, res) => {
       idToken: mockIdToken.substring(0, 50) + '...' 
     });
 
+    // Step 2b: Visa returns ID token to agent
+    StepEmitter.emitStepStart('return-id-token', 'payment');
+    await new Promise(resolve => setTimeout(resolve, 300)); // Visual delay
+    StepEmitter.emitStepComplete('return-id-token', 'payment', {
+      idToken: mockIdToken.substring(0, 50) + '...'
+    });
+
     // Step 3: Generate nonce and timestamps
     StepEmitter.emitStepStart('generate-nonce', 'payment');
     await new Promise(resolve => setTimeout(resolve, 400)); // Visual delay

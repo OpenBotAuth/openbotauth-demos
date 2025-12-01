@@ -61,6 +61,7 @@ export function useStepEvents(callbacks?: StepEventsCallbacks) {
         const stepMap: Record<string, { from: ParticipantType; to: ParticipantType; label: string }> = {
           'record-consent': { from: 'agent', to: 'agent', label: 'Record Consent' },
           'request-id-token': { from: 'agent', to: 'visa', label: 'Request ID Token' },
+          'return-id-token': { from: 'visa', to: 'agent', label: 'Return ID Token' },
           'generate-nonce': { from: 'agent', to: 'agent', label: 'Generate Nonce' },
           'build-tap-objects': { from: 'agent', to: 'agent', label: 'Build TAP Objects' },
           'sign-message': { from: 'agent', to: 'agent', label: 'Sign Message (RFC 9421)' },

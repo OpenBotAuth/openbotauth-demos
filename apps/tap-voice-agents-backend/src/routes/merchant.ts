@@ -29,7 +29,10 @@ router.post('/checkout', async (req, res) => {
     });
 
     // Step 2: Verify HTTP signature via OBA verifier
-    StepEmitter.emitStepStart('oba-verify-http-sig', 'verification');
+    StepEmitter.emitStepStart('oba-verify-http-sig', 'verification', {
+      verifierUrl: 'https://verifier.openbotauth.org/verify',
+      signatureAgent: req.headers['signature-agent']
+    });
 
     // Use req.originalUrl to get the full path including the /merchant prefix
     // Express strips the mount path from req.url, but we need the full path for signature verification
@@ -52,7 +55,11 @@ router.post('/checkout', async (req, res) => {
       return res.status(401).json({ error: 'HTTP signature verification failed', details: verifyResult.error });
     }
 
-    StepEmitter.emitStepComplete('oba-verify-http-sig', 'verification', { agentId: verifyResult.agentId });
+    StepEmitter.emitStepComplete('oba-verify-http-sig', 'verification', { 
+      verified: true,
+      agentId: verifyResult.agentId,
+      keyId: verifyResult.keyId
+    });
 
     // Step 3: Fetch JWKS to get the public key for TAP signature verification
     StepEmitter.emitStepStart('fetch-jwks', 'verification');

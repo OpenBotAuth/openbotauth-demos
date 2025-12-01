@@ -76,11 +76,11 @@ pnpm dev:tap-voice-frontend
 3. Say "checkout" to hand off to Penny
 4. Authorize payment via voice consent
 5. Watch real-time sequence diagram as payment flows through:
-   - Agent → Merchant (signed request)
-   - Merchant → OBA Verifier (signature verification)
-   - OBA Verifier → OBA Registry (JWKS fetch)
-   - Merchant validates TAP objects
-   - Merchant → Visa (payment authorization)
+   - User Agent → Merchant Origin (signed request)
+   - Merchant Origin → OpenBotAuth Verifier (signature verification)
+   - OpenBotAuth Verifier → OpenBotAuth Registry (JWKS fetch)
+   - Merchant Origin validates TAP objects
+   - Merchant Origin → Visa Mock (payment authorization)
    - Success response back to Agent
 
 **Security:** Triple-layer signing with shared nonce across HTTP signature and both TAP objects, 8-minute time-bound sessions, origin-side verification.

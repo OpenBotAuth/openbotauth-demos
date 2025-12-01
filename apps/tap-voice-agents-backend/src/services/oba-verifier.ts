@@ -23,6 +23,13 @@ export class OBAVerifier {
         headers: signatureHeaders,
       };
 
+      console.log('\n🔐 [OBA Verifier] Calling OpenBotAuth Verifier Service');
+      console.log('   URL:', this.verifierUrl);
+      console.log('   Request Method:', request.method);
+      console.log('   Request URL:', request.url);
+      console.log('   Signature-Agent:', signatureHeaders['signature-agent']);
+      console.log('   Signature-Input:', signatureHeaders['signature-input']);
+
       const response = await fetch(this.verifierUrl, {
         method: 'POST',
         headers: {
@@ -41,12 +48,21 @@ export class OBAVerifier {
         error?: string;
       };
 
+      console.log('   Response Status:', response.status);
+      console.log('   Response Body:', JSON.stringify(data, null, 2));
+
       if (!response.ok) {
+        console.log('   ❌ Verification FAILED:', data.error);
         return {
           verified: false,
           error: data.error || `Verifier returned ${response.status}`,
         };
       }
+
+      console.log('   ✅ Verification SUCCESS');
+      console.log('   Agent ID:', data.agent?.id);
+      console.log('   Key ID:', data.agent?.keyId);
+      console.log('');
 
       // Extract public key from verifier response
       // The verifier returns agent info including the public key

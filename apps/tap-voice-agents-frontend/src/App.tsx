@@ -8,7 +8,6 @@ import ProductGrid from './components/shopping/ProductGrid';
 import CartPanel from './components/shopping/CartPanel';
 import VoiceInterface from './components/voice/VoiceInterface';
 import SequenceDiagram from './components/diagram/SequenceDiagram';
-import DevToolsPanel from './components/devtools/DevToolsPanel';
 
 function App() {
   const [phase, setPhase] = useState<AppPhase>('shopping');
@@ -17,7 +16,6 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false);
   const [cartLocked] = useState(false); // Not using setCartLocked for now - cart stays unlocked
   const [sequenceExpanded, setSequenceExpanded] = useState(false);
-  const [devtoolsVisible, setDevtoolsVisible] = useState(false);
   const [highlightedProductId, setHighlightedProductId] = useState<number | null>(null);
 
   const { steps, activeStep, resetSteps } = useStepEvents({
@@ -41,7 +39,7 @@ function App() {
       setTimeout(() => {
         console.log('[App] Now switching to Penny');
         transitionToPenny();
-      }, 7000);
+      }, 9000);
     },
     onPaymentAuthorized: () => {
       console.log('[App] Payment authorized - closing cart to show sequence diagram');
@@ -57,14 +55,12 @@ function App() {
     //setCartLocked(true);
     setPhase('checkout');
     setSequenceExpanded(true);
-    setDevtoolsVisible(true);
   };
 
   // Auto-expand sequence diagram when steps start arriving
   useEffect(() => {
     if (steps.length > 0 && !sequenceExpanded) {
       setSequenceExpanded(true);
-      setDevtoolsVisible(true);
       setPhase('checkout');
       
       // Scroll to sequence diagram after a short delay
@@ -202,10 +198,10 @@ function App() {
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
       {/* Main Content Area */}
-      <div className="relative" style={{ paddingBottom: devtoolsVisible ? '30vh' : '0' }}>
+      <div className="relative">
         {/* Header */}
         <header className="bg-slate-800 border-b border-slate-700 px-6 py-4">
-          <h1 className="heading-lg">TAP Voice Agents - Premium Fashion</h1>
+          <h1 className="heading-lg">Your Voice Agents Shopping on Any Merchant via OpenBotAuth Registry</h1>
           <p className="text-sm text-slate-400 mt-1">
             OpenBotAuth + ElevenLabs + Visa TAP Demo
           </p>
@@ -235,7 +231,7 @@ function App() {
 
         {/* Sequence Diagram - Always visible */}
         <div className="sequence-diagram-container px-6 py-4 bg-purple-900/20 mt-8">
-          <h2 className="text-xl font-bold mb-4 text-purple-300">Live TAP Payment Flow with OpenBotAuth Registry</h2>
+          <h2 className="text-xl font-bold mb-4 text-purple-300">Live Visa TAP Payment Flow with OpenBotAuth Registry</h2>
           <SequenceDiagram
             steps={steps}
             activeStep={activeStep}
@@ -252,7 +248,6 @@ function App() {
             // Payment execution started - scroll to diagram but keep cart open until authorized
             setPhase('checkout');
             setSequenceExpanded(true);
-            setDevtoolsVisible(true);
             // Scroll to diagram
             setTimeout(() => {
               const diagramElement = document.querySelector('.sequence-diagram-container');
@@ -263,19 +258,6 @@ function App() {
           }}
         />
       </div>
-
-      {/* DevTools Panel */}
-      <DevToolsPanel
-        visible={devtoolsVisible}
-        httpHeaders={steps[activeStep]?.data?.headers || null}
-        consumerObject={steps.find((s) => s.id === 'verify-tap-signatures')?.data?.consumer || null}
-        paymentObject={steps.find((s) => s.id === 'verify-tap-signatures')?.data?.payment || null}
-        requestData={{
-          method: 'POST',
-          url: 'http://localhost:8090/merchant/checkout',
-          body: steps.find((s) => s.id === 'merchant-receive')?.data,
-        }}
-      />
     </div>
   );
 }
