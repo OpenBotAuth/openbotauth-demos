@@ -1,0 +1,264 @@
+{
+  "pete_cart_agent": {
+    "agent_name": "Pete (Cart Agent)",
+    "agent_role": "User's shopping sub-agent running in their wallet/extension",
+    "system_prompt": "You are Pete, the user's shopping sub-agent running in their wallet/extension. In this demo you are visually embedded in a fashion website, but you always act on the user's behalf, not the merchant's. Your goal is to help the user pick products and add them to their cart using the add_to_cart tool.\n\nAvailable products:\nClassic White Shirt ($89)\nNavy Blazer ($249)\nDark Denim Jeans ($129)\nBrown Leather Loafers ($179)\nBurgundy Polo Shirt ($79)\nTan Chinos ($99)\nBlack Dress Shoes ($199)\nCharcoal Sweater ($119)\n\nBehaviors:\n- Be concise, friendly, and confident – you're \"their agent\", not a pushy salesperson.\n- Ask quick clarifying questions if needed (size, color, which item), then call add_to_cart.\n- After each tool call, summarize what you did: e.g., \"I've added the Navy Blazer in your size to your cart.\"\n- When the user wants to checkout, call initiate_checkout.\n- Immediately after calling initiate_checkout, say:\n  \"Perfect – I've prepared your cart. I'm now handing you off to Penny, your checkout sub-agent, who will securely complete the payment. One moment…\"\n- Do not try to take payment or ask for card details yourself; that is Penny's job.",
+    "tools": [
+      {
+        "type": "webhook",
+        "name": "add_to_cart",
+        "description": "Add an item to the user's shopping cart",
+        "webhook_url": "https://your-demo-url/webhooks/elevenlabs/cart",
+        "disable_interruptions": false,
+        "force_pre_tool_speech": "auto",
+        "execution_mode": "immediate",
+        "api_schema": {
+          "url": "https://your-demo-url/webhooks/elevenlabs/cart",
+          "method": "POST",
+          "request_body_schema": {
+            "type": "object",
+            "description": "Parameters for adding an item to the cart",
+            "properties": [
+              {
+                "id": "item_name",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "The name of the product to add (e.g., 'Classic White Shirt', 'Denim Jacket')",
+                "required": true
+              },
+              {
+                "id": "quantity",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Number of items to add (defaults to 1 if user doesn't specify)",
+                "required": false
+              }
+            ]
+          }
+        },
+        "response_timeout_secs": 20
+      },
+      {
+        "type": "webhook",
+        "name": "view_cart",
+        "description": "Show the current items in the shopping cart and total",
+        "webhook_url": "https://your-demo-url/webhooks/elevenlabs/cart/view",
+        "disable_interruptions": false,
+        "force_pre_tool_speech": "auto",
+        "execution_mode": "immediate",
+        "api_schema": {
+          "url": "https://your-demo-url/webhooks/elevenlabs/cart/view",
+          "method": "POST",
+          "request_body_schema": {
+            "type": "object",
+            "description": "No real parameters are required to view the cart. The backend ignores the noop field.",
+            "properties": [
+              {
+                "id": "noop",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Leave empty. This field is ignored by the backend.",
+                "required": false
+              }
+            ]
+          }
+        },
+        "response_timeout_secs": 20
+      },
+      {
+        "type": "webhook",
+        "name": "initiate_checkout",
+        "description": "Start the checkout process and hand off to the payment agent (Penny)",
+        "webhook_url": "https://your-demo-url/webhooks/elevenlabs/cart/checkout",
+        "disable_interruptions": false,
+        "force_pre_tool_speech": "auto",
+        "execution_mode": "immediate",
+        "api_schema": {
+          "url": "https://your-demo-url/webhooks/elevenlabs/cart/checkout",
+          "method": "POST",
+          "request_body_schema": {
+            "type": "object",
+            "description": "No real parameters are required to initiate checkout. The backend ignores the noop field.",
+            "properties": [
+              {
+                "id": "noop",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Leave empty. This field is ignored by the backend.",
+                "required": false
+              }
+            ]
+          }
+        },
+        "response_timeout_secs": 20
+      }
+    ]
+  },
+  "penny_payment_agent": {
+    "agent_name": "Penny (Payment Agent)",
+    "agent_role": "User's checkout sub-agent running in their wallet/extension",
+    "system_prompt": "You are Penny, the user's checkout sub-agent running in their wallet/extension. In this demo, you appear in the payment panel, but you always represent the user, not the merchant. Your role is to confirm the total and perform a TAP-style payment flow using the tools provided.\n\nWhen a conversation with you starts:\n1. Immediately call get_checkout_info to retrieve the current total and currency.\n2. After getting the total, tell the user clearly:\n   \"Your checkout total is $X. Do you authorize this payment?\"\n3. Wait for explicit confirmation (e.g., \"yes\", \"I authorize\", \"go ahead\", \"proceed\").\n4. When they confirm, call capture_consent with:\n   - user_confirmed = true\n   - consent_phrase set to the user's exact words of authorization.\n5. Immediately after successful consent capture, call execute_payment with:\n   - payment_token = \"tok_visa_4242\"\n   - user_identifier = \"demo_user\"\n6. After execute_payment succeeds, confirm:\n   \"Perfect – your payment of $X has been processed successfully. Thank you!\"\n\nStyle guidelines:\n- Be efficient and professional.\n- Don't ask unnecessary questions; your only job is: confirm total → get authorization → process payment.\n- If the user hesitates or says anything ambiguous, politely re-ask for a clear yes/no before proceeding.\n- Never ask for real card numbers or sensitive data – this is a demo with a mock Visa issuer.",
+    "tools": [
+      {
+        "type": "webhook",
+        "name": "get_checkout_info",
+        "description": "Get the checkout total and items from the current session",
+        "webhook_url": "https://your-demo-url/webhooks/elevenlabs/payment/info",
+        "disable_interruptions": false,
+        "force_pre_tool_speech": "auto",
+        "execution_mode": "immediate",
+        "api_schema": {
+          "url": "https://your-demo-url/webhooks/elevenlabs/payment/info",
+          "method": "POST",
+          "request_body_schema": {
+            "type": "object",
+            "description": "No real parameters are required; the backend uses the current session/metadata to find the checkout info. The noop field is ignored.",
+            "properties": [
+              {
+                "id": "noop",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Leave empty. This field is ignored by the backend.",
+                "required": false
+              }
+            ]
+          }
+        },
+        "response_timeout_secs": 20
+      },
+      {
+        "type": "webhook",
+        "name": "capture_consent",
+        "description": "Capture the user's verbal consent to authorize the payment",
+        "webhook_url": "https://your-demo-url/webhooks/elevenlabs/payment/consent",
+        "disable_interruptions": false,
+        "force_pre_tool_speech": "auto",
+        "execution_mode": "immediate",
+        "api_schema": {
+          "url": "https://your-demo-url/webhooks/elevenlabs/payment/consent",
+          "method": "POST",
+          "request_body_schema": {
+            "type": "object",
+            "description": "Verbal consent transcript and confirmation flag",
+            "properties": [
+              {
+                "id": "transcript",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "The exact transcript of the user's authorization statement",
+                "required": true
+              },
+              {
+                "id": "user_confirmed",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Whether the user explicitly confirmed the payment ('true' or 'false')",
+                "required": true
+              }
+            ]
+          }
+        },
+        "response_timeout_secs": 20
+      },
+      {
+        "type": "webhook",
+        "name": "execute_payment",
+        "description": "Execute the payment after consent has been captured",
+        "webhook_url": "https://your-demo-url/webhooks/elevenlabs/payment/execute",
+        "disable_interruptions": false,
+        "force_pre_tool_speech": "auto",
+        "execution_mode": "immediate",
+        "api_schema": {
+          "url": "https://your-demo-url/webhooks/elevenlabs/payment/execute",
+          "method": "POST",
+          "request_body_schema": {
+            "type": "object",
+            "description": "Mock payment execution parameters",
+            "properties": [
+              {
+                "id": "payment_token",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "Mock payment token (use 'tok_visa_4242' for demo)",
+                "required": true
+              },
+              {
+                "id": "user_identifier",
+                "type": "string",
+                "value_type": "llm_prompt",
+                "description": "User identifier (use 'demo_user' for demo)",
+                "required": true
+              }
+            ]
+          }
+        },
+        "response_timeout_secs": 20
+      }
+    ]
+  },
+  "product_catalog": {
+    "note": "These prices are hardcoded in apps/tap-voice-agents-backend/src/routes/elevenlabs.ts",
+    "products": [
+      {
+        "name": "Classic White Shirt",
+        "price": 89,
+        "currency": "USD"
+      },
+      {
+        "name": "Navy Blazer",
+        "price": 249,
+        "currency": "USD"
+      },
+      {
+        "name": "Dark Denim Jeans",
+        "price": 129,
+        "currency": "USD"
+      },
+      {
+        "name": "Brown Leather Loafers",
+        "price": 179,
+        "currency": "USD"
+      },
+      {
+        "name": "Burgundy Polo Shirt",
+        "price": 79,
+        "currency": "USD"
+      },
+      {
+        "name": "Tan Chinos",
+        "price": 99,
+        "currency": "USD"
+      },
+      {
+        "name": "Black Dress Shoes",
+        "price": 199,
+        "currency": "USD"
+      },
+      {
+        "name": "Charcoal Sweater",
+        "price": 119,
+        "currency": "USD"
+      }
+    ]
+  },
+  "setup_instructions": {
+    "step_1": "Start tunnel: lt --port 8090 (or ngrok/cloudflare)",
+    "step_2": "Copy the tunnel URL (e.g., https://lazy-shirts-bake.loca.lt)",
+    "step_3": "Go to ElevenLabs dashboard and create/edit your Pete agent",
+    "step_4": "For EACH of Pete's 3 tools, set its specific webhook URL (replace 'your-demo-url' with tunnel URL)",
+    "step_5": "Copy Pete's system prompt into the agent's system prompt field",
+    "step_6": "Create/edit your Penny agent",
+    "step_7": "For EACH of Penny's 3 tools, set its specific webhook URL (replace 'your-demo-url' with tunnel URL)",
+    "step_8": "Copy Penny's system prompt into the agent's system prompt field",
+    "step_9": "In your frontend .env, set VITE_ELEVENLABS_CART_AGENT_ID and VITE_ELEVENLABS_PAYMENT_AGENT_ID",
+    "important_notes": [
+      "CRITICAL: Each tool needs its own webhook URL, not just the base URL",
+      "Do NOT use /api/ prefix in webhook URLs (routes are at /webhooks/elevenlabs/*)",
+      "The webhook URL must be publicly accessible (use tunnel)",
+      "Make sure your backend is running on port 8090",
+      "Replace 'your-demo-url' with your actual tunnel URL",
+      "Pete's system prompt emphasizes he's the user's agent, not the merchant's",
+      "Penny's system prompt instructs her to be proactive and call tools in sequence"
+    ]
+  }
+}

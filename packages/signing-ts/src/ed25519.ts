@@ -1,11 +1,12 @@
 /**
- * Ed25519 cryptographic operations using Node.js Web Crypto API
+ * Ed25519 cryptographic operations using Node's WebCrypto API
+ * This matches the bot-cli implementation in OpenBotAuth core
  */
 
 import { webcrypto } from 'node:crypto';
 
 /**
- * Generate a random nonce (base64url-encoded 16 bytes)
+ * Generate a random nonce (base64url-encoded 16 bytes, no padding)
  */
 export function generateNonce(): string {
   const bytes = webcrypto.getRandomValues(new Uint8Array(16));
@@ -13,33 +14,21 @@ export function generateNonce(): string {
 }
 
 /**
- * Convert PEM to ArrayBuffer
- */
-export function pemToBuffer(pem: string): ArrayBuffer {
-  const base64 = pem
-    .replace(/-----BEGIN PRIVATE KEY-----/, '')
-    .replace(/-----END PRIVATE KEY-----/, '')
-    .replace(/-----BEGIN PUBLIC KEY-----/, '')
-    .replace(/-----END PUBLIC KEY-----/, '')
-    .replace(/\s/g, '');
-  
-  const buffer = Buffer.from(base64, 'base64');
-  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-}
-
-/**
  * Sign a message using Ed25519 private key
+ * 
+ * Uses Node's WebCrypto API (webcrypto.subtle.sign) which is compatible
+ * with the OpenBotAuth verifier service.
  * 
  * @param message - Message to sign (UTF-8 string)
  * @param privateKeyPem - Ed25519 private key in PKCS8 PEM format
- * @returns Signature as base64 string (NOT base64url, per RFC 9421)
+ * @returns Signature as base64 string
  */
 export async function signEd25519(
   message: string,
   privateKeyPem: string
 ): Promise<string> {
   try {
-    // Import private key from PEM (PKCS8 format)
+    // Import private key from PEM using WebCrypto
     const privateKey = await webcrypto.subtle.importKey(
       'pkcs8',
       pemToBuffer(privateKeyPem),
@@ -58,12 +47,27 @@ export async function signEd25519(
       messageBuffer
     );
 
-    // Return base64-encoded signature (NOT base64url per RFC 9421)
+    // Return base64-encoded signature
     return Buffer.from(signatureBuffer).toString('base64');
   } catch (error) {
     console.error('Error signing message:', error);
     throw new Error(`Failed to sign message: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+/**
+ * Convert PEM to ArrayBuffer for WebCrypto
+ * 
+ * This matches the bot-cli implementation exactly.
+ */
+function pemToBuffer(pem: string): ArrayBuffer {
+  const base64 = pem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s/g, '');
+  
+  const buffer = Buffer.from(base64, 'base64');
+  return buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
 }
 
 /**
@@ -90,4 +94,3 @@ export function base64UrlToBase64(base64url: string): string {
   
   return base64;
 }
-

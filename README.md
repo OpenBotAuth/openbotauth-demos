@@ -48,6 +48,50 @@ Interactive web UI demonstrating signed fetch with visual diff:
 - See request headers, response status, and body preview
 - Visual diff showing added signature headers
 
+### 3. TAP Voice Agents
+
+**Cryptographic agent-to-merchant payments** — [Full Documentation](TAP_VOICE_DEMO.md) | [Demo Video](https://youtu.be/1ZPB_n6v6EI)
+
+Shows how commerce works when users have their own AI agents. Pete and Penny are **user-owned agents** (like browser extensions or OS services) that shop and pay on the user's behalf using cryptographic signatures.
+
+**What it demonstrates:**
+- **User-Owned Agents**: AI agents that live client-side and act on behalf of users, not merchants
+- **Cryptographic Identity**: RFC 9421 HTTP Message Signatures prove agent identity without sessions/cookies
+- **Consent Proofs**: Application-level signatures prove user authorization for specific actions
+- **Triple-Layer Signing**: HTTP signature + 2 object signatures (consent + payment) with shared nonce
+- **Origin-First Verification**: Merchants verify signatures directly using OpenBotAuth (no CDN/proxy)
+- **Live Flow Visualization**: 15-step sequence diagram shows the complete cryptographic handshake
+
+```bash
+# Start backend (http://localhost:8090)
+pnpm dev:tap-voice-backend
+
+# Start frontend (http://localhost:5175)
+pnpm dev:tap-voice-frontend
+```
+
+**Flow:**
+1. User's shopping agent (Pete) adds items to cart
+2. User initiates checkout → Pete hands off to payment agent (Penny)
+3. User authorizes payment → Penny executes cryptographic flow:
+   - Records consent proof with timestamp
+   - Generates shared nonce for all signature layers
+   - Signs consent proof object (Ed25519)
+   - Signs payment request object (Ed25519)
+   - Signs HTTP request (RFC 9421)
+   - Sends to merchant with all three signatures
+4. Merchant verifies:
+   - HTTP signature via OpenBotAuth verifier
+   - Fetches agent's public key from JWKS
+   - Validates consent + payment object signatures
+   - Checks nonce consistency across all layers
+   - Authorizes payment with Visa
+5. Order confirmed
+
+**Security:** Shared nonce prevents replay attacks, 8-minute time windows, Ed25519 signatures, origin-side verification.
+
+See [TAP_VOICE_DEMO.md](TAP_VOICE_DEMO.md) for complete setup, architecture, ElevenLabs configuration, and troubleshooting.
+
 ---
 
 ## Quick Start
@@ -90,15 +134,21 @@ openssl pkey -in private_key.pem -pubout -out public_key.pem
 If you downloaded keys from the OpenBotAuth website:
 
 ```bash
-# For Node.js apps (widget, backend)
+# For root .env (widget demo)
 node scripts/parse-keys.js path/to/openbotauth-keys-username.txt
+
+# For specific app directories (uses .env.example as template)
+node scripts/parse-keys.js path/to/openbotauth-keys-username.txt apps/tap-voice-agents-backend
 
 # For Python agent
 cd examples/langchain-agent
 python parse_keys.py path/to/openbotauth-keys-username.txt
 ```
 
-This will automatically generate `.env` files with your keys.
+**Note**: When using an app-specific directory, the script will:
+1. Use that app's `.env.example` as a template
+2. Replace only the `OBA_*` placeholders
+3. Leave other fields for you to fill in (like ElevenLabs API keys)
 
 **Manual:**
 
@@ -221,6 +271,7 @@ Signature-Agent: https://registry.openbotauth.org/jwks/username.json
 ```
 openbotauth-demos/
 ├── README.md                          # This file
+├── TAP_VOICE_DEMO.md                  # TAP Voice Agents comprehensive guide
 ├── QUICKSTART.md                      # Fast setup guide
 ├── SECURITY_AUDIT.md                  # Dependency security review
 ├── LICENSE                            # Apache 2.0
@@ -253,11 +304,26 @@ openbotauth-demos/
     │       ├── config.ts             # Environment config
     │       ├── logger.ts             # Secure logging
     │       └── types.ts              # Type definitions
-    └── widget-frontend/              # React UI
+    ├── widget-frontend/              # React UI
+    │   └── src/
+    │       ├── App.tsx               # Main component
+    │       └── components/
+    │           └── HeadersDiff.tsx   # Signature headers diff view
+    ├── tap-voice-agents-backend/     # TAP Voice Agents backend
+    │   ├── src/
+    │   │   ├── server.ts             # Express app
+    │   │   ├── routes/               # API endpoints
+    │   │   ├── services/             # Business logic
+    │   │   ├── tap/                  # TAP object builders
+    │   │   └── events/               # SSE event emitter
+    │   ├── ELEVENLABS_SETUP.md       # ElevenLabs agent configuration
+    │   └── ELEVENLABS_WEBHOOKS.json  # Tool definitions
+    └── tap-voice-agents-frontend/    # TAP Voice Agents frontend
         └── src/
-            ├── App.tsx               # Main component
-            └── components/
-                └── HeadersDiff.tsx   # Signature headers diff view
+            ├── App.tsx               # Main application
+            ├── components/           # UI components
+            ├── hooks/                # React hooks (SSE)
+            └── utils/                # Helper functions
 ```
 
 ---
