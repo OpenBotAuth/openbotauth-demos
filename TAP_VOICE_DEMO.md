@@ -4,21 +4,23 @@
 
 Premium fashion shopping experience with voice checkout, demonstrating Visa TAP-style agentic commerce powered by OpenBotAuth and ElevenLabs Conversational AI.
 
+**Important**: Pete and Penny are **user sub-agents** running in the user's wallet/browser extension, not website agents. They always act on behalf of the user, not the merchant.
+
 ---
 
 ## Overview
 
 This demo showcases a complete voice-driven shopping and checkout experience that implements:
 
-- **TAP-Style Signing**: RFC 9421 HTTP Message Signatures + application-level signatures for `agenticConsumer` and `agenticPaymentContainer` objects
+- **TAP-Style Signing**: RFC 9421 HTTP Message Signatures + application-level signatures for `userConsentProof` and `paymentRequest` objects
 - **OpenBotAuth Integration**: Origin-first, CDN-agnostic verification using the hosted OBA verifier service
-- **Voice Agents**: Two ElevenLabs Conversational AI agents (Pete for shopping, Penny for payment)
+- **User Sub-Agents**: Two ElevenLabs voice agents (Pete for shopping, Penny for payment) that act on behalf of the user, not the merchant
 - **Live Visualization**: Real-time sequence diagram showing all 15 steps of the payment flow
 - **Browser-Native UI**: Agent panels styled to look like browser extensions for an authentic experience
 
 ### Key Features
 
-- ✅ **Two Voice Agents**: Pete (shopping assistant) and Penny (payment processor)
+- ✅ **Two User Sub-Agents**: Pete (shopping assistant) and Penny (payment processor) - they represent the user, not the merchant
 - ✅ **Triple-Layer Signing**: HTTP Message Signature + 2 TAP object signatures with shared nonce
 - ✅ **Origin-First Verification**: Merchant backend calls `https://verifier.openbotauth.org/verify` directly
 - ✅ **Live Sequence Diagram**: 15-step animated flow with OpenBotAuth swimlanes
@@ -85,13 +87,15 @@ This demo showcases a complete voice-driven shopping and checkout experience tha
 
 **Key Architectural Points**:
 
-1. **Origin-First Verification**: The merchant backend acts as the origin server, calling the OBA verifier directly. No CDN proxy is required—this demonstrates OpenBotAuth's CDN-agnostic design.
+1. **User Sub-Agents**: Pete and Penny are the **user's agents**, not the merchant's. In this demo they appear embedded in the website UI, but they always act on behalf of the user (like a browser extension or wallet agent would).
 
-2. **Agent Identity**: The payment agent uses a single Ed25519 keypair registered with the OBA registry. The public key is published via JWKS at `https://api.openbotauth.org/jwks/[username].json`.
+2. **Origin-First Verification**: The merchant backend acts as the origin server, calling the OBA verifier directly. No CDN proxy is required—this demonstrates OpenBotAuth's CDN-agnostic design.
 
-3. **TAP-Style Objects**: The `agenticConsumer` and `agenticPaymentContainer` objects are demo-local JSON structures, not part of the core OBA protocol. They demonstrate how application-level signatures can be layered on top of RFC 9421.
+3. **Agent Identity**: The user's sub-agents use a single Ed25519 keypair registered with the OBA registry. The public key is published via JWKS at `https://api.openbotauth.org/jwks/[username].json`.
 
-4. **Shared Nonce**: A single nonce is generated at checkout initiation and used across all three signature layers (HTTP Message Signature + 2 TAP objects) to prevent replay attacks.
+4. **Application-Level Objects**: The `userConsentProof` and `paymentRequest` objects are demo-local JSON structures, not part of the core OBA protocol. They demonstrate how application-level signatures can be layered on top of RFC 9421.
+
+5. **Shared Nonce**: A single nonce is generated at checkout initiation and used across all three signature layers (HTTP Message Signature + 2 signed objects) to prevent replay attacks.
 
 ---
 
@@ -250,7 +254,9 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
 
 ## User Flow
 
-### Phase 1: Shopping with Pete
+### Phase 1: Shopping with Pete (Your Shopping Sub-Agent)
+
+Pete is **your agent** - he helps you shop but always acts in your interest, not the merchant's.
 
 1. **Browse Products**: View 8 men's fashion items (shirts, jackets, shoes, etc.)
 2. **Add to Cart**: 
@@ -261,9 +267,11 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
    - **Voice**: "I'm ready to checkout"
    - **Manual**: Click "Proceed to Checkout" in cart panel
 
-### Phase 2: Checkout with Penny
+### Phase 2: Checkout with Penny (Your Payment Sub-Agent)
 
-1. **Agent Handoff**: Pete says "Connecting you to Penny, our payment specialist..."
+Penny is also **your agent** - she handles payment on your behalf and represents you to the merchant.
+
+1. **Agent Handoff**: Pete says "Connecting you to Penny, your checkout sub-agent..."
 2. **Penny Greets**: "Your checkout total is $X. Do you authorize this payment?"
 3. **User Authorizes**:
    - **Voice**: Say "Yes"
@@ -280,9 +288,9 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
 
 **During Payment Authorization**:
 - Backend records consent proof with timestamp
-- Builds `agenticConsumer` object (includes userId, consentId, nonce, timestamps)
-- Builds `agenticPaymentContainer` object (includes tokenHash, amount, merchantId, nonce, timestamps)
-- Signs both TAP objects with Ed25519 private key
+- Builds `userConsentProof` object (includes userId, consentId, nonce, timestamps)
+- Builds `paymentRequest` object (includes tokenHash, amount, merchantId, nonce, timestamps)
+- Signs both objects with Ed25519 private key
 - Creates RFC 9421 HTTP Message Signature with same nonce and timestamps
 - Sends signed POST request to merchant endpoint
 
@@ -291,7 +299,7 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
 - Calls OBA verifier at `https://verifier.openbotauth.org/verify`
 - OBA verifier fetches public key from `https://api.openbotauth.org/jwks/[username].json`
 - OBA verifier validates HTTP Message Signature
-- Merchant validates TAP object signatures using public key
+- Merchant validates application-level object signatures using public key
 - Merchant verifies nonce consistency across all three layers
 - Merchant verifies timestamps are within 8-minute window
 - Merchant calls Visa mock for authorization
@@ -299,9 +307,9 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
 
 ---
 
-## TAP Object Details
+## Application-Level Signed Objects
 
-### Agentic Consumer Object
+### User Consent Proof Object
 
 ```json
 {
@@ -318,11 +326,11 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
 
 **Purpose**: Proves that the agent is acting on behalf of a specific user with explicit consent.
 
-**Signature Base**: `agentic-consumer:` + canonical JSON (sorted keys, no whitespace)
+**Signature Base**: `user-consent:` + canonical JSON (sorted keys, no whitespace)
 
 **Signature Algorithm**: Ed25519 (same key as HTTP Message Signature)
 
-### Agentic Payment Container Object
+### Payment Request Object
 
 ```json
 {
@@ -341,7 +349,7 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
 
 **Purpose**: Securely transmits payment details with proof of agent authorization.
 
-**Signature Base**: `agentic-payment:` + canonical JSON (sorted keys, no whitespace)
+**Signature Base**: `payment-request:` + canonical JSON (sorted keys, no whitespace)
 
 **Signature Algorithm**: Ed25519 (same key as HTTP Message Signature)
 
@@ -350,8 +358,8 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
 **Critical Security Feature**: All three signature layers must use the SAME nonce:
 
 1. HTTP Message Signature: `Signature-Input: sig1=(...);nonce="abc123";...`
-2. `agenticConsumer.nonce`: `"abc123"`
-3. `agenticPaymentContainer.nonce`: `"abc123"`
+2. `userConsentProof.nonce`: `"abc123"`
+3. `paymentRequest.nonce`: `"abc123"`
 
 **Merchant Verification**:
 
@@ -360,8 +368,8 @@ For full voice interaction, you'll need to configure two ElevenLabs agents with 
 const httpNonce = parseSignatureInput(headers['signature-input']).nonce;
 
 // Verify consistency
-if (httpNonce !== body.agenticConsumer.nonce ||
-    httpNonce !== body.agenticPaymentContainer.nonce) {
+if (httpNonce !== body.userConsentProof.nonce ||
+    httpNonce !== body.paymentRequest.nonce) {
   throw new Error('Nonce mismatch across signature layers');
 }
 ```
@@ -375,8 +383,8 @@ This ensures that all three signatures were created in the same session and prev
 ### Triple-Layer Signing
 
 1. **HTTP Message Signature (RFC 9421)**: Proves the entire HTTP request came from the agent
-2. **Consumer Object Signature**: Proves the agent has user consent
-3. **Payment Object Signature**: Proves the payment details are authentic
+2. **User Consent Proof Signature**: Proves the agent has user consent
+3. **Payment Request Signature**: Proves the payment details are authentic
 
 All three layers use the same Ed25519 keypair, nonce, and timestamps.
 

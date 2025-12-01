@@ -52,13 +52,15 @@ Interactive web UI demonstrating signed fetch with visual diff:
 
 **Premium fashion shopping with voice checkout** — [Full Documentation](TAP_VOICE_DEMO.md) | [Demo Video](https://youtu.be/1ZPB_n6v6EI)
 
-Interactive voice commerce demo showing Visa TAP-style agentic payments with OpenBotAuth:
+Interactive voice commerce demo showing Visa TAP-style agentic payments with OpenBotAuth.
+
+**Key Concept**: Pete and Penny are **user sub-agents** (like browser extensions or wallet agents) that act on behalf of the user, not the merchant.
 
 **Features:**
-- **Two ElevenLabs Voice Agents**: Pete (shopping assistant) + Penny (payment processor)
-- **Live 15-Step Sequence Diagram**: Real-time visualization showing RFC 9421 + TAP signing flow with OpenBotAuth swimlanes
+- **Two User Sub-Agents**: Pete (shopping assistant) + Penny (payment processor) - they represent the user, not the merchant
+- **Live 15-Step Sequence Diagram**: Real-time visualization showing RFC 9421 + application-level signing flow with OpenBotAuth swimlanes
 - **Origin-First Verification**: Merchant calls OBA verifier directly (no CDN dependency)
-- **Triple-Layer Signing**: HTTP Message Signature + 2 TAP object signatures with shared nonce
+- **Triple-Layer Signing**: HTTP Message Signature + 2 application-level object signatures (user consent proof + payment request) with shared nonce
 - **Browser-Native UI**: Agent panels styled like browser extensions, glass morphism cart
 - **Real-Time SSE Updates**: Backend emits events as each verification step completes
 
@@ -74,10 +76,10 @@ pnpm dev:tap-voice-frontend
 1. Browse 8 men's fashion products, add to cart with Pete (voice or manual)
 2. Say "checkout" → Pete hands off to Penny
 3. Authorize payment → Watch live sequence diagram animate through 15 steps:
-   - Record Consent → Request ID Token → Generate Nonce → Build TAP Objects
+   - Record Consent → Request ID Token → Generate Nonce → Build Signed Objects
    - Sign Message (RFC 9421) → POST /checkout → Merchant Receive
    - Verify HTTP Signature → Fetch JWKS → Return Public Key → Verification Result
-   - Verify TAP Signatures → Authorize Payment → Checkout Complete
+   - Verify Object Signatures → Authorize Payment → Checkout Complete
 4. Order confirmed with transaction ID
 
 **Security:** Shared nonce across all three signature layers, 8-minute time-bound sessions, Ed25519 signing, origin-side verification.
