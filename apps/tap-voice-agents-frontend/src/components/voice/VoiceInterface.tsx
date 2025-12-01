@@ -316,15 +316,15 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
   // Minimized view
   if (isMinimized) {
     return (
-      <div className="fixed left-6 bottom-6 z-50">
+      <div className="fixed left-0 right-0 bottom-0 z-50">
         <button
           onClick={() => setIsMinimized(false)}
-          className="card-glass px-6 py-4 flex items-center gap-3 hover:scale-105 transition-transform"
+          className="w-full bg-gray-100 border-t-2 border-gray-300 px-6 py-3 flex items-center gap-3 hover:bg-gray-200 transition-colors shadow-lg"
         >
           <AgentAvatar agent={activeAgent} speaking={speaking} />
           <div className="text-left">
-            <div className="text-sm font-semibold text-slate-100">{agentName}</div>
-            <div className="text-xs text-slate-400">Click to expand</div>
+            <div className="text-sm font-semibold text-gray-900">{agentName}</div>
+            <div className="text-xs text-gray-600">Your Personal Shopping Agent • Click to expand</div>
           </div>
         </button>
       </div>
@@ -332,20 +332,20 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
   }
 
   return (
-    <div className="fixed left-6 bottom-6 z-50 max-h-[calc(100vh-3rem)] flex flex-col">
-      <div className="card-glass max-w-md min-w-[380px] overflow-y-auto flex-1 flex flex-col">
-        {/* Agent Avatar and Info with Close Button */}
-        <div className="flex items-center gap-4 mb-4">
+    <div className="fixed left-0 right-0 bottom-0 z-50 bg-gray-100 border-t-2 border-gray-300 shadow-2xl" style={{ maxHeight: '50vh' }}>
+      <div className="max-w-full overflow-y-auto flex flex-col" style={{ maxHeight: '50vh' }}>
+        {/* Agent Avatar and Info with Close Button - Browser-native style */}
+        <div className="flex items-center gap-4 px-6 py-4 bg-gray-200 border-b border-gray-300">
           <AgentAvatar agent={activeAgent} speaking={speaking} />
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-slate-100">{agentName}</h3>
-            <p className="text-sm text-slate-400">{agentRole}</p>
+            <h3 className="text-lg font-semibold text-gray-900">{agentName}</h3>
+            <p className="text-sm text-gray-600">{agentRole}</p>
           </div>
           <div className="flex items-center gap-2">
-            <div className={`badge ${
-              voiceStatus === 'speaking' ? 'badge-success' : 
-              voiceStatus === 'listening' || voiceStatus === 'connected' ? 'badge-info' :
-              voiceStatus === 'connecting' ? 'badge-warning' : 'badge-info'
+            <div className={`px-2 py-1 rounded text-xs font-medium ${
+              voiceStatus === 'speaking' ? 'bg-green-100 text-green-800' : 
+              voiceStatus === 'listening' || voiceStatus === 'connected' ? 'bg-blue-100 text-blue-800' :
+              voiceStatus === 'connecting' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800'
             }`}>
               {voiceStatus === 'connecting' ? 'Connecting...' :
                voiceStatus === 'speaking' ? 'Speaking' :
@@ -354,7 +354,7 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
             </div>
             <button
               onClick={() => setIsMinimized(true)}
-              className="text-slate-400 hover:text-slate-200 transition-colors p-1"
+              className="text-gray-500 hover:text-gray-700 transition-colors p-1"
               title="Minimize"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -366,31 +366,31 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
 
         {/* Error Display */}
         {error && (
-          <div className="mb-4 p-3 bg-red-900/20 border border-red-700/30 rounded text-sm text-red-300">
+          <div className="mx-6 my-3 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700">
             {error}
           </div>
         )}
 
         {/* Voice Controls */}
         {!conversationStarted && (
-          <div className="text-center py-3 border-b border-slate-700/50">
+          <div className="text-center py-4 px-6 border-b border-gray-200 bg-gray-50">
             <button 
               onClick={handleStart}
               disabled={voiceStatus === 'connecting'}
-              className="btn-secondary text-sm py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto"
+              className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 px-6 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 mx-auto transition-colors"
             >
-              <span>{voiceStatus === 'connecting' ? '🔄' : '🎤'}</span>
+              {/* <span>{voiceStatus === 'connecting' ? '🔄' : '🎤'}</span> */}
               <span>{voiceStatus === 'connecting' ? 'Connecting...' : `Use Voice with ${agentName}`}</span>
             </button>
-            <p className="text-xs text-slate-400 mt-1">
-            Runs in your wallet / extension – embedded here for demo.
+            <p className="text-xs text-gray-500 mt-2">
+              Runs in your wallet / extension – embedded here for demo.
             </p>
           </div>
         )}
 
         {conversationStarted && (
-          <div className="flex-1 overflow-y-auto flex flex-col min-h-0">
-            <div className="text-sm text-slate-300 mb-3 flex-shrink-0">
+          <div className="flex-1 overflow-y-auto flex flex-col min-h-0 bg-gray-50 px-6 py-4">
+            <div className="text-sm text-gray-700 mb-3 flex-shrink-0 bg-blue-50 border border-blue-200 rounded p-3">
               {activeAgent === 'pete' ? (
                 <p className="flex items-center gap-2">
                   <span>💬</span>
@@ -414,7 +414,7 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
               <div className="mt-4 flex-shrink-0">
                 <button
                   onClick={handleStop}
-                  className="btn-secondary w-full flex items-center justify-center gap-2"
+                  className="bg-gray-200 hover:bg-gray-300 text-gray-800 w-full py-2 rounded flex items-center justify-center gap-2 transition-colors"
                 >
                   <span>⏹️</span>
                   <span>Stop Voice</span>
@@ -424,9 +424,9 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
           </div>
         )}
 
-        {/* Manual Control Panel - ALWAYS VISIBLE */}
-        <div className="mt-auto pt-4 border-t border-slate-700/50 flex-shrink-0">
-          <p className="text-xs text-slate-400 mb-3">
+        {/* Manual Control Panel - ALWAYS VISIBLE - Browser-native style */}
+        <div className="mt-auto pt-4 px-6 pb-4 border-t border-gray-300 bg-gray-200 flex-shrink-0">
+          <p className="text-xs text-gray-600 mb-3">
             {conversationStarted ? 'Or use manual controls:' : 'Manual Controls:'}
           </p>
           <div className="grid grid-cols-2 gap-2">
@@ -434,13 +434,13 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
               <>
                 <button
                   onClick={handleManualAddItem}
-                  className="btn-secondary text-sm"
+                  className="bg-gray-50 border border-gray-300 hover:bg-white text-gray-800 text-sm py-2 rounded transition-colors"
                 >
                   Add Item
                 </button>
                 <button
                   onClick={handleManualCheckout}
-                  className="btn-primary text-sm col-span-2"
+                  className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 rounded col-span-2 transition-colors"
                 >
                   Checkout
                 </button>
@@ -448,7 +448,7 @@ export default function VoiceInterface({ activeAgent, onAgentSwitch, onStopReque
             ) : (
               <button
                 onClick={handleManualAuthorize}
-                className="btn-primary text-sm col-span-2"
+                className="bg-blue-600 hover:bg-blue-700 text-white text-sm py-2 rounded col-span-2 transition-colors"
               >
                 Authorize Payment
               </button>

@@ -12,17 +12,17 @@ export default function Transcript({ messages }: TranscriptProps) {
   }
 
   return (
-    <div className="mt-4 max-h-32 overflow-y-auto space-y-2">
+    <div className="mt-4 max-h-32 overflow-y-auto space-y-3">
       {messages.slice(-3).map((message, index) => (
         <div 
           key={index} 
-          className={`text-sm ${
+          className={`text-sm p-2 rounded ${
             message.speaker === 'user' 
-              ? 'text-slate-300' 
-              : 'text-blue-400'
+              ? 'bg-blue-50 text-gray-800 border border-blue-200' 
+              : 'bg-gray-100 text-gray-800 border border-gray-200'
           }`}
         >
-          <span className="font-semibold">
+          <span className="font-semibold text-gray-900">
             {message.speaker === 'user' ? 'You' : 'Agent'}:
           </span>{' '}
           {message.text}

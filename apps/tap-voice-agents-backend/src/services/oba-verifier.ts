@@ -44,6 +44,9 @@ export class OBAVerifier {
           id?: string;
           keyId?: string;
           publicKey?: string;
+          client_name?: string;
+          kid?: string;
+          jwks_url?: string;
         };
         error?: string;
       };
@@ -60,8 +63,9 @@ export class OBAVerifier {
       }
 
       console.log('   ✅ Verification SUCCESS');
-      console.log('   Agent ID:', data.agent?.id);
-      console.log('   Key ID:', data.agent?.keyId);
+      console.log('   Client Name:', data.agent?.client_name || 'N/A');
+      console.log('   Key ID:', data.agent?.kid || 'N/A');
+      console.log('   JWKS URL:', data.agent?.jwks_url || 'N/A');
       console.log('');
 
       // Extract public key from verifier response
