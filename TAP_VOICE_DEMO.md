@@ -1,6 +1,14 @@
 # TAP Voice Agents: Visa-Style Agentic Commerce with OpenBotAuth
 
-**🎥 [Watch Demo Video](https://youtu.be/1ZPB_n6v6EI)**
+## Demo (2 mins)
+
+<p align="center">
+  <a href="https://youtu.be/1ZPB_n6v6EI" target="_blank">
+    <img src="https://img.youtube.com/vi/1ZPB_n6v6EI/maxresdefault.jpg" width="720">
+    <br>
+    <img src="https://img.shields.io/badge/▶️%20Watch%20the%20Demo-red?style=for-the-badge">
+  </a>
+</p>
 
 Premium fashion shopping experience with voice checkout, demonstrating Visa TAP-style agentic commerce powered by OpenBotAuth and ElevenLabs Conversational AI.
 
