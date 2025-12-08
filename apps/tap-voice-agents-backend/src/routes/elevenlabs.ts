@@ -347,7 +347,7 @@ router.post('/payment/execute', async (req, res) => {
     await new Promise(resolve => setTimeout(resolve, 600)); // Visual delay
     
     // Build RFC 9421 signed request
-    const merchantUrl = `http://localhost:${config.port}/merchant/checkout`;
+    const merchantUrl = `${config.publicUrl}/merchant/checkout`;
     const requestBody = {
       agenticConsumer: consumer,
       agenticPaymentContainer: payment,
