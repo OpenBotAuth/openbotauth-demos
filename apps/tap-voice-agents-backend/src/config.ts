@@ -6,6 +6,7 @@ export interface Config {
   // Server
   port: number;
   frontendUrl: string;
+  publicUrl: string;
 
   // OpenBotAuth
   obaPrivateKeyPem: string;
@@ -40,6 +41,7 @@ export function loadConfig(): Config {
   return {
     port: parseInt(getEnvVar('PORT', false) || '8090', 10),
     frontendUrl: getEnvVar('FRONTEND_URL', false) || 'http://localhost:5175',
+    publicUrl: getEnvVar('PUBLIC_URL', false) || `http://localhost:${getEnvVar('PORT', false) || '8090'}`,
 
     obaPrivateKeyPem: getEnvVar('OBA_PRIVATE_KEY_PEM'),
     obaPublicKeyPem: getEnvVar('OBA_PUBLIC_KEY_PEM'),
