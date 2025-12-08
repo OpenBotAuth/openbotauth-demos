@@ -9,6 +9,8 @@ import CartPanel from './components/shopping/CartPanel';
 import VoiceInterface from './components/voice/VoiceInterface';
 import SequenceDiagram from './components/diagram/SequenceDiagram';
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8090';
+
 function App() {
   const [phase, setPhase] = useState<AppPhase>('shopping');
   const [activeAgent, setActiveAgent] = useState<ActiveAgent>('pete');
@@ -127,7 +129,7 @@ function App() {
     // Also add to backend cart so manual checkout works
     try {
       const sessionId = getSessionId();
-      await fetch('http://localhost:8090/api/cart/add', {
+      await fetch(`${BACKEND_URL}/api/cart/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -164,7 +166,7 @@ function App() {
   const handleCheckout = async () => {
     try {
       const sessionId = getSessionId();
-      const response = await fetch('http://localhost:8090/api/checkout/initiate', {
+      const response = await fetch(`${BACKEND_URL}/api/checkout/initiate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

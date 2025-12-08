@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { SequenceStep, ParticipantType } from '../types';
 
-const BACKEND_URL = 'http://localhost:8090';
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8090';
 
 interface StepEventsCallbacks {
   onCartUpdated?: (data: { items: any[]; total: number; item_count: number }) => void;

@@ -7,15 +7,18 @@ const clients = new Set<Response>();
 export class StepEmitter {
   static addClient(res: Response): void {
     clients.add(res);
+    console.log(`[SSE] Client connected. Total clients: ${clients.size}`);
     
     // Remove client on connection close
     res.on('close', () => {
       clients.delete(res);
+      console.log(`[SSE] Client disconnected. Total clients: ${clients.size}`);
     });
   }
 
   static emit(event: any): void {
     const message = `data: ${JSON.stringify(event)}\n\n`;
+    console.log(`[SSE] Emitting event to ${clients.size} client(s):`, event.type);
 
     clients.forEach((client) => {
       try {
