@@ -40,6 +40,13 @@ router.post('/checkout', async (req, res) => {
     const protocol = req.headers['x-forwarded-proto'] as string || req.protocol;
     const host = req.headers['x-forwarded-host'] as string || req.get('host');
     const verifyRequestUrl = `${protocol}://${host}${req.originalUrl}`;
+    
+    console.log('[Merchant] Debug - Building verify URL:');
+    console.log('  X-Forwarded-Proto:', req.headers['x-forwarded-proto']);
+    console.log('  X-Forwarded-Host:', req.headers['x-forwarded-host']);
+    console.log('  req.protocol:', req.protocol);
+    console.log('  req.get(host):', req.get('host'));
+    console.log('  Final URL:', verifyRequestUrl);
 
     const verifyResult = await verifier.verifySignature({
       method: req.method,
