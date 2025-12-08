@@ -7,8 +7,9 @@ const app = express();
 
 // Middleware
 app.use(cors({
-  origin: config.frontendUrl,
+  origin: [config.frontendUrl, 'http://localhost:5175', 'http://127.0.0.1:5175'],
   credentials: true,
+  exposedHeaders: ['Content-Type', 'Cache-Control', 'Connection'],
 }));
 app.use(express.json());
 

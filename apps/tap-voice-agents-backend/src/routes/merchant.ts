@@ -223,9 +223,19 @@ router.post('/mock-visa/authorize', async (req, res) => {
 // SSE events stream
 // Note: This is mounted at /api/events, so the full path is /api/events/stream
 router.get('/stream', (req, res) => {
+  // SSE-specific headers
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+  
+  // CORS headers for SSE (already set by cors middleware, but being explicit)
+  const origin = req.get('origin');
+  if (origin && (origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+  }
+  
   res.flushHeaders();
 
   StepEmitter.addClient(res);

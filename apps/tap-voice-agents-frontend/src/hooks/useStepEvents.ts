@@ -24,10 +24,17 @@ export function useStepEvents(callbacks?: StepEventsCallbacks) {
     const eventSource = new EventSource(`${BACKEND_URL}/api/events/stream`);
 
     eventSource.onopen = () => {
-      console.log('[SSE] Connected');
+      console.log('[SSE] ✅ Connection opened (readyState:', eventSource.readyState, ')');
+    };
+
+    eventSource.onerror = (error) => {
+      console.error('[SSE] ❌ Connection error:', error);
+      console.error('[SSE] ReadyState:', eventSource.readyState);
+      // readyState: 0 = CONNECTING, 1 = OPEN, 2 = CLOSED
     };
 
     eventSource.onmessage = (event) => {
+      console.log('[SSE] 📨 Raw message received:', event.data);
       try {
         const data = JSON.parse(event.data);
         
