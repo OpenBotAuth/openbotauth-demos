@@ -36,7 +36,10 @@ router.post('/checkout', async (req, res) => {
 
     // Use req.originalUrl to get the full path including the /merchant prefix
     // Express strips the mount path from req.url, but we need the full path for signature verification
-    const verifyRequestUrl = `http://localhost:${config.port}${req.originalUrl}`;
+    // Use X-Forwarded-Proto and X-Forwarded-Host from nginx proxy, or fall back to req.protocol and req.get('host')
+    const protocol = req.headers['x-forwarded-proto'] as string || req.protocol;
+    const host = req.headers['x-forwarded-host'] as string || req.get('host');
+    const verifyRequestUrl = `${protocol}://${host}${req.originalUrl}`;
 
     const verifyResult = await verifier.verifySignature({
       method: req.method,
